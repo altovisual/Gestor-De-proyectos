@@ -43,6 +43,10 @@ function App() {
   const [showPerspectivesManager, setShowPerspectivesManager] = useState(false);
   const [newPerspective, setNewPerspective] = useState('');
   const [editingPerspective, setEditingPerspective] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null); // null = todos, 'pendiente', 'en-progreso', 'completado'
+  const [selectedPriority, setSelectedPriority] = useState(null); // null = todos, 'alta', 'media', 'baja'
+  const [showNewTaskResponsableSuggestions, setShowNewTaskResponsableSuggestions] = useState(false);
+  const [filteredNewTaskResponsableSuggestions, setFilteredNewTaskResponsableSuggestions] = useState([]);
 
   // Cargar tareas, participantes y perspectivas desde localStorage
   useEffect(() => {
@@ -455,14 +459,19 @@ function App() {
     const matchesSearch = task.actividad.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          task.perspectiva.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPerspective = !selectedPerspective || task.perspectiva === selectedPerspective;
-    return matchesSearch && matchesPerspective;
+    const matchesStatus = !selectedStatus || task.estatus === selectedStatus;
+    const matchesPriority = !selectedPriority || task.prioridad === selectedPriority;
+    return matchesSearch && matchesPerspective && matchesStatus && matchesPriority;
   });
 
   const stats = {
     total: tasks.length,
     completado: tasks.filter(t => t.estatus === 'completado').length,
     enProgreso: tasks.filter(t => t.estatus === 'en-progreso').length,
-    pendiente: tasks.filter(t => t.estatus === 'pendiente').length
+    pendiente: tasks.filter(t => t.estatus === 'pendiente').length,
+    alta: tasks.filter(t => t.prioridad === 'alta').length,
+    media: tasks.filter(t => t.prioridad === 'media').length,
+    baja: tasks.filter(t => t.prioridad === 'baja').length
   };
 
   const getStatusBadge = (status) => {
@@ -483,119 +492,218 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header estilo iOS */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Header minimalista estilo iOS */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
+            {/* Logo y Título */}
             <div className="flex items-center gap-3">
-              <div className="bg-white p-2 rounded-2xl shadow-sm">
+              <div className="bg-gray-50 p-2 rounded-xl">
                 <img 
                   src="/mvpx.png" 
                   alt="Logo MVPX" 
-                  className="w-12 h-12 object-contain"
+                  className="w-10 h-10 object-contain"
                   onError={(e) => {
-                    // Fallback al icono si la imagen no carga
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
                 />
-                <div className="bg-blue-500 p-3 rounded-2xl shadow-sm hidden">
-                  <Music className="w-7 h-7 text-white" />
+                <div className="bg-gray-100 p-2.5 rounded-xl hidden">
+                  <Music className="w-5 h-5 text-gray-600" />
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
+                <h1 className="text-xl font-semibold text-gray-900">
                   Proyecto Dayan
                 </h1>
-                <p className="text-sm text-gray-500 mt-0.5">Cronograma Musical</p>
+                <p className="text-xs text-gray-500">Cronograma Musical</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                onClick={() => setShowPerspectivesManager(true)} 
-                variant="outline" 
-                className="gap-2 rounded-xl"
+            
+            {/* Chips minimalistas */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowPerspectivesManager(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm font-medium transition-all duration-200 hover:shadow-sm"
               >
-                <Target className="w-4 h-4" />
-                Perspectivas ({getAllPerspectives().length})
-              </Button>
-              <Button 
-                onClick={() => setShowParticipantsManager(true)} 
-                variant="outline" 
-                className="gap-2 rounded-xl"
+                <Target className="w-3.5 h-3.5" />
+                <span>Perspectivas</span>
+                <span className="px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                  {getAllPerspectives().length}
+                </span>
+              </button>
+              
+              <button
+                onClick={() => setShowParticipantsManager(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm font-medium transition-all duration-200 hover:shadow-sm"
               >
-                <Users className="w-4 h-4" />
-                Participantes ({globalParticipants.length})
-              </Button>
-              <Button onClick={exportToExcel} className="gap-2 rounded-xl">
-                <Download className="w-4 h-4" />
-                Exportar
-              </Button>
+                <Users className="w-3.5 h-3.5" />
+                <span>Participantes</span>
+                <span className="px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                  {globalParticipants.length}
+                </span>
+              </button>
+              
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm font-medium transition-all duration-200 hover:shadow-md"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Exportar</span>
+              </button>
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Objetivo */}
-        <Card className="mb-8 border-l-4 border-l-purple-600">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-600" />
-              <CardTitle className="text-xl">Objetivo del Proyecto</CardTitle>
+        {/* Objetivo - Minimalista */}
+        <Card className="mb-6 border-gray-200 hover:border-gray-300 transition-all duration-200">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-gray-100 rounded-lg">
+                <Target className="w-4 h-4 text-gray-600" />
+              </div>
+              <CardTitle className="text-base font-semibold text-gray-900">Objetivo del Proyecto</CardTitle>
             </div>
-            <CardDescription className="text-base mt-2">
+            <CardDescription className="text-sm text-gray-600 leading-relaxed">
               {projectData.objetivo}
             </CardDescription>
           </CardHeader>
         </Card>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Tareas</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-gray-400" />
+        {/* Stats - Minimalista */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+          <button
+            onClick={() => setSelectedStatus(null)}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedStatus === null 
+                ? 'border-gray-900 bg-gray-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">Total Tareas</span>
+              <div className="p-1.5 bg-gray-100 rounded-lg">
+                <Calendar className="w-4 h-4 text-gray-600" />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600">Completadas</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.completado}</p>
-                </div>
-                <Check className="w-8 h-8 text-green-400" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          </button>
+          <button
+            onClick={() => setSelectedStatus(selectedStatus === 'completado' ? null : 'completado')}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedStatus === 'completado' 
+                ? 'border-green-500 bg-green-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">Completadas</span>
+              <div className={`p-1.5 rounded-lg ${selectedStatus === 'completado' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <Check className={`w-4 h-4 ${selectedStatus === 'completado' ? 'text-green-600' : 'text-gray-600'}`} />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-600">En Progreso</p>
-                  <p className="text-3xl font-bold text-yellow-600">{stats.enProgreso}</p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-400" />
+            </div>
+            <p className={`text-2xl font-bold ${selectedStatus === 'completado' ? 'text-green-600' : 'text-gray-900'}`}>
+              {stats.completado}
+            </p>
+          </button>
+          
+          <button
+            onClick={() => setSelectedStatus(selectedStatus === 'en-progreso' ? null : 'en-progreso')}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedStatus === 'en-progreso' 
+                ? 'border-orange-500 bg-orange-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">En Progreso</span>
+              <div className={`p-1.5 rounded-lg ${selectedStatus === 'en-progreso' ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                <Clock className={`w-4 h-4 ${selectedStatus === 'en-progreso' ? 'text-orange-600' : 'text-gray-600'}`} />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Pendientes</p>
-                  <p className="text-3xl font-bold text-gray-600">{stats.pendiente}</p>
-                </div>
-                <AlertCircle className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className={`text-2xl font-bold ${selectedStatus === 'en-progreso' ? 'text-orange-600' : 'text-gray-900'}`}>
+              {stats.enProgreso}
+            </p>
+          </button>
+          
+          <button
+            onClick={() => setSelectedStatus(selectedStatus === 'pendiente' ? null : 'pendiente')}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedStatus === 'pendiente' 
+                ? 'border-gray-900 bg-gray-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">Pendientes</span>
+              <div className="p-1.5 bg-gray-100 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-gray-600" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.pendiente}</p>
+          </button>
+        </div>
+
+        {/* Priority Stats - Minimalista */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+          <button
+            onClick={() => setSelectedPriority(selectedPriority === 'alta' ? null : 'alta')}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedPriority === 'alta' 
+                ? 'border-red-500 bg-red-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">🔴 Alta Prioridad</span>
+              <div className={`p-1.5 rounded-lg ${selectedPriority === 'alta' ? 'bg-red-100' : 'bg-gray-100'}`}>
+                <AlertCircle className={`w-4 h-4 ${selectedPriority === 'alta' ? 'text-red-600' : 'text-gray-600'}`} />
+              </div>
+            </div>
+            <p className={`text-2xl font-bold ${selectedPriority === 'alta' ? 'text-red-600' : 'text-gray-900'}`}>
+              {stats.alta}
+            </p>
+          </button>
+          
+          <button
+            onClick={() => setSelectedPriority(selectedPriority === 'media' ? null : 'media')}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedPriority === 'media' 
+                ? 'border-yellow-500 bg-yellow-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">🟡 Media Prioridad</span>
+              <div className={`p-1.5 rounded-lg ${selectedPriority === 'media' ? 'bg-yellow-100' : 'bg-gray-100'}`}>
+                <Clock className={`w-4 h-4 ${selectedPriority === 'media' ? 'text-yellow-600' : 'text-gray-600'}`} />
+              </div>
+            </div>
+            <p className={`text-2xl font-bold ${selectedPriority === 'media' ? 'text-yellow-600' : 'text-gray-900'}`}>
+              {stats.media}
+            </p>
+          </button>
+          
+          <button
+            onClick={() => setSelectedPriority(selectedPriority === 'baja' ? null : 'baja')}
+            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+              selectedPriority === 'baja' 
+                ? 'border-green-500 bg-green-50 shadow-sm' 
+                : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-500">🟢 Baja Prioridad</span>
+              <div className={`p-1.5 rounded-lg ${selectedPriority === 'baja' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <Check className={`w-4 h-4 ${selectedPriority === 'baja' ? 'text-green-600' : 'text-gray-600'}`} />
+              </div>
+            </div>
+            <p className={`text-2xl font-bold ${selectedPriority === 'baja' ? 'text-green-600' : 'text-gray-900'}`}>
+              {stats.baja}
+            </p>
+          </button>
         </div>
 
         {/* Filters */}
@@ -676,9 +784,15 @@ function App() {
 
         {/* Add Task Form */}
         {showAddTask && (
-          <Card className="mb-6 border-purple-200">
-            <CardHeader>
-              <CardTitle>Agregar Nueva Tarea</CardTitle>
+          <Card className="mb-6 border-gray-200">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Agregar Nueva Tarea</CardTitle>
+              <button
+                onClick={() => setShowAddTask(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -711,13 +825,58 @@ function App() {
                     placeholder="Descripción detallada"
                   />
                 </div>
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium mb-2">Responsable</label>
                   <Input
                     value={newTask.responsable}
-                    onChange={(e) => setNewTask({...newTask, responsable: e.target.value})}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setNewTask({...newTask, responsable: value});
+                      
+                      // Filtrar sugerencias
+                      if (value.trim()) {
+                        const suggestions = globalParticipants.filter(p => 
+                          p.toLowerCase().includes(value.toLowerCase())
+                        );
+                        setFilteredNewTaskResponsableSuggestions(suggestions);
+                        setShowNewTaskResponsableSuggestions(suggestions.length > 0);
+                      } else {
+                        setShowNewTaskResponsableSuggestions(false);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (newTask.responsable.trim() && filteredNewTaskResponsableSuggestions.length > 0) {
+                        setShowNewTaskResponsableSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowNewTaskResponsableSuggestions(false), 200);
+                    }}
                     placeholder="Nombre del responsable"
+                    className="rounded-xl"
                   />
+                  
+                  {/* Dropdown de sugerencias */}
+                  {showNewTaskResponsableSuggestions && filteredNewTaskResponsableSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {filteredNewTaskResponsableSuggestions.map((participant, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setNewTask({...newTask, responsable: participant});
+                            setShowNewTaskResponsableSuggestions(false);
+                          }}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                            {participant.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                          <span className="text-sm text-gray-900">{participant}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-2">Estatus</label>
@@ -729,6 +888,18 @@ function App() {
                     <option value="pendiente">Pendiente</option>
                     <option value="en-progreso">En Progreso</option>
                     <option value="completado">Completado</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Prioridad</label>
+                  <select
+                    value={newTask.prioridad || 'media'}
+                    onChange={(e) => setNewTask({...newTask, prioridad: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  >
+                    <option value="alta">🔴 Alta Prioridad</option>
+                    <option value="media">🟡 Media Prioridad</option>
+                    <option value="baja">🟢 Baja Prioridad</option>
                   </select>
                 </div>
                 <div>
@@ -1129,6 +1300,19 @@ function App() {
                       <option value="pendiente">Pendiente</option>
                       <option value="en-progreso">En Progreso</option>
                       <option value="completado">Completado</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Prioridad</label>
+                    <select
+                      value={editingTask.prioridad || 'media'}
+                      onChange={(e) => setEditingTask({...editingTask, prioridad: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
+                    >
+                      <option value="alta">🔴 Alta Prioridad</option>
+                      <option value="media">🟡 Media Prioridad</option>
+                      <option value="baja">🟢 Baja Prioridad</option>
                     </select>
                   </div>
 

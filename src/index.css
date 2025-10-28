@@ -97,3 +97,75 @@
     @apply border-blue-500 shadow-md ring-2 ring-blue-100;
   }
 }
+
+/* Animación de degradado con colores del logo MVPX */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animate {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B, #8B5CF6);
+  background-size: 300% 300%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.gradient-border {
+  position: relative;
+  background: white;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, #8B5CF6, #EC4899, #F59E0B, #8B5CF6);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* Animaciones suaves estilo iOS para drag & drop */
+.dragging-card {
+  transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1),
+              opacity 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.drop-zone-active {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Animación de rebote suave iOS */
+@keyframes ios-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.ios-bounce {
+  animation: ios-bounce 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}

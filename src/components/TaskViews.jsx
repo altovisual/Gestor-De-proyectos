@@ -11,7 +11,11 @@ import { Check, Clock, AlertCircle, Edit2, Trash2, Users, X, Calendar } from 'lu
 export const SmallCardsView = ({ tasks, getStatusBadge, openEditModal, deleteTask }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     {tasks.map(task => (
-      <Card key={task.id} className="hover:shadow-md transition-shadow">
+      <Card 
+        key={task.id} 
+        className="hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => openEditModal(task)}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
@@ -21,7 +25,7 @@ export const SmallCardsView = ({ tasks, getStatusBadge, openEditModal, deleteTas
               </div>
               <CardTitle className="text-sm truncate">{task.actividad}</CardTitle>
             </div>
-            <div className="flex gap-1 ml-2">
+            <div className="flex gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="icon" onClick={() => openEditModal(task)} className="h-7 w-7">
                 <Edit2 className="w-3 h-3" />
               </Button>
@@ -68,7 +72,11 @@ export const ListView = ({ tasks, getStatusBadge, openEditModal, deleteTask, upd
             : 0;
           
           return (
-            <tr key={task.id} className="hover:bg-gray-50 transition-colors">
+            <tr 
+              key={task.id} 
+              className="hover:bg-gray-50 transition-colors cursor-pointer"
+              onClick={() => openEditModal(task)}
+            >
               <td className="px-4 py-3">
                 <div className="font-medium text-sm text-gray-900">{task.actividad}</div>
                 {task.descripcion && (
@@ -91,7 +99,7 @@ export const ListView = ({ tasks, getStatusBadge, openEditModal, deleteTask, upd
                   <span className="text-xs text-gray-600">{progress}%</span>
                 </div>
               </td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                 <div className="flex gap-1 justify-end">
                   <Button variant="ghost" size="sm" onClick={() => openEditModal(task)} className="h-7 px-2">
                     <Edit2 className="w-3 h-3" />
@@ -112,9 +120,9 @@ export const ListView = ({ tasks, getStatusBadge, openEditModal, deleteTask, upd
 // Vista Kanban
 export const KanbanView = ({ tasks, onDragEnd, getStatusBadge, openEditModal, deleteTask }) => {
   const priorities = {
-    alta: { label: 'Alta Prioridad', color: 'bg-red-50 border-red-200', tasks: [] },
-    media: { label: 'Media Prioridad', color: 'bg-yellow-50 border-yellow-200', tasks: [] },
-    baja: { label: 'Baja Prioridad', color: 'bg-green-50 border-green-200', tasks: [] }
+    alta: { label: '🔴 Alta Prioridad', color: 'bg-red-50 border-red-300', icon: '🔴', tasks: [] },
+    media: { label: '🟡 Media Prioridad', color: 'bg-yellow-50 border-yellow-300', icon: '🟡', tasks: [] },
+    baja: { label: '🟢 Baja Prioridad', color: 'bg-green-50 border-green-300', icon: '🟢', tasks: [] }
   };
 
   tasks.forEach(task => {
@@ -138,7 +146,14 @@ export const KanbanView = ({ tasks, onDragEnd, getStatusBadge, openEditModal, de
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className={`space-y-3 min-h-[400px] ${snapshot.isDraggingOver ? 'bg-blue-50/50' : ''}`}
+                  className={`space-y-3 min-h-[400px] rounded-lg p-2 drop-zone-active ${
+                    snapshot.isDraggingOver 
+                      ? 'bg-blue-100/80 border-2 border-dashed border-blue-400 scale-[1.02]' 
+                      : 'border-2 border-transparent'
+                  }`}
+                  style={{
+                    transition: 'all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)'
+                  }}
                 >
                   {data.tasks.map((task, index) => (
                     <Draggable key={task.id} draggableId={task.id} index={index}>
@@ -146,15 +161,34 @@ export const KanbanView = ({ tasks, onDragEnd, getStatusBadge, openEditModal, de
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={`bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow ${
-                            snapshot.isDragging ? 'shadow-lg rotate-2' : ''
+                          className={`bg-white rounded-lg border-2 p-3 dragging-card ${
+                            snapshot.isDragging 
+                              ? 'shadow-2xl scale-110 border-blue-400 bg-blue-50 opacity-95' 
+                              : 'border-gray-200 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md'
                           }`}
+                          style={{
+                            ...provided.draggableProps.style,
+                            transition: snapshot.isDragging 
+                              ? 'none' 
+                              : 'transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)'
+                          }}
                         >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
+                          <div className="flex items-start gap-2 mb-2">
+                            <div 
+                              {...provided.dragHandleProps}
+                              className="flex items-center justify-center w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 cursor-grab active:cursor-grabbing flex-shrink-0"
+                              title="Arrastra para cambiar prioridad"
+                            >
+                              <span className="text-xs">⋮⋮</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
                               <Badge variant="outline" className="text-xs mb-1">{task.perspectiva}</Badge>
-                              <h4 className="text-sm font-medium text-gray-900">{task.actividad}</h4>
+                              <h4 
+                                className="text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600"
+                                onClick={() => openEditModal(task)}
+                              >
+                                {task.actividad}
+                              </h4>
                             </div>
                             <div className="flex gap-1">
                               <Button variant="ghost" size="icon" onClick={() => openEditModal(task)} className="h-6 w-6">
@@ -228,7 +262,11 @@ export const QuartersView = ({ tasks, projectData, getStatusBadge, openEditModal
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data.tasks.map(task => (
-              <Card key={task.id} className="hover:shadow-md transition-shadow">
+              <Card 
+                key={task.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => openEditModal(task)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -238,7 +276,7 @@ export const QuartersView = ({ tasks, projectData, getStatusBadge, openEditModal
                       </div>
                       <CardTitle className="text-sm">{task.actividad}</CardTitle>
                     </div>
-                    <div className="flex gap-1 ml-2">
+                    <div className="flex gap-1 ml-2" onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" onClick={() => openEditModal(task)} className="h-7 w-7">
                         <Edit2 className="w-3 h-3" />
                       </Button>
