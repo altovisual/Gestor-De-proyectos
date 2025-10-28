@@ -9,32 +9,69 @@ export const projectData = {
         {
           id: "1",
           nombre: "Planificar el Proceso de Grabación del Disco",
-          subtareas: ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6"]
+          subtareas: [
+            "Definir presupuesto total de grabación",
+            "Seleccionar estudio de grabación",
+            "Contratar productor musical",
+            "Crear cronograma de sesiones",
+            "Reservar fechas en estudio",
+            "Preparar contratos y acuerdos"
+          ]
         },
         {
           id: "2",
           nombre: "Tu Altar",
-          subtareas: ["2.1", "2.3", "2.4", "2.6", "2.7"]
+          subtareas: [
+            "Finalizar arreglos musicales",
+            "Grabar pistas de instrumentos",
+            "Grabar voces principales y coros",
+            "Realizar mezcla de audio",
+            "Masterizar versión final"
+          ]
         },
         {
           id: "3",
           nombre: "Te Adorare",
-          subtareas: ["3.1", "3.2", "3.3", "3.4", "3.5"]
+          subtareas: [
+            "Revisar letra y melodía",
+            "Grabar demo de pre-producción",
+            "Grabar instrumentación completa",
+            "Grabar voces y armonías",
+            "Mezclar y masterizar"
+          ]
         },
         {
           id: "4",
           nombre: "Te Doy Gracias",
-          subtareas: ["4.1", "4.2", "4.3", "4.4", "4.5"]
+          subtareas: [
+            "Preparar arreglos finales",
+            "Sesión de grabación de base rítmica",
+            "Grabar instrumentos melódicos",
+            "Grabar voces lead y backing",
+            "Post-producción y mastering"
+          ]
         },
         {
           id: "5",
           nombre: "Fluye",
-          subtareas: ["5.1", "5.2", "5.3", "5.4", "5.5"]
+          subtareas: [
+            "Definir concepto sonoro",
+            "Grabar tracks de batería y bajo",
+            "Grabar guitarras y teclados",
+            "Grabar voces principales",
+            "Mezcla y masterización final"
+          ]
         },
         {
           id: "6",
           nombre: "Ten Mi Corazon",
-          subtareas: ["6.1", "6.2", "6.3", "6.4", "6.5"]
+          subtareas: [
+            "Afinar detalles de producción",
+            "Grabar instrumentación completa",
+            "Sesión de voces principales",
+            "Grabar coros y ad-libs",
+            "Mezcla final y mastering"
+          ]
         }
       ]
     },
@@ -45,17 +82,43 @@ export const projectData = {
         {
           id: "7",
           nombre: "Incrementar un 20% el numero de seguidores en sus redes sociales en un periodo de tres meses",
-          subtareas: ["7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8", "7.9", "7.10"]
+          subtareas: [
+            "Crear calendario de contenido mensual",
+            "Publicar contenido diario en Instagram y TikTok",
+            "Realizar 3 lives semanales en Instagram",
+            "Crear reels virales con tendencias actuales",
+            "Colaborar con 5 influencers del género",
+            "Lanzar campaña de ads en Meta (Instagram/Facebook)",
+            "Crear challenges y concursos para engagement",
+            "Responder todos los comentarios diariamente",
+            "Compartir contenido behind the scenes",
+            "Analizar métricas semanalmente y ajustar estrategia"
+          ]
         },
         {
           id: "8",
           nombre: "Incrementar el engagement en las redes sociales",
-          subtareas: ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8"]
+          subtareas: [
+            "Crear encuestas y polls interactivos",
+            "Hacer Q&A semanal con fans",
+            "Compartir historias personales y auténticas",
+            "Repostear contenido generado por fans",
+            "Crear series de contenido recurrente",
+            "Usar stickers interactivos en stories",
+            "Organizar sesiones de escucha en vivo",
+            "Responder DMs y menciones activamente"
+          ]
         },
         {
           id: "9",
           nombre: "Incrementar nuevos fans en nuevos mercados",
-          subtareas: ["9.1", "9.2", "9.3", "9.4", "9.5"]
+          subtareas: [
+            "Investigar mercados objetivo (países/ciudades)",
+            "Crear contenido en idiomas de mercados objetivo",
+            "Colaborar con artistas locales de otros países",
+            "Lanzar ads geo-segmentados",
+            "Participar en eventos virtuales internacionales"
+          ]
         }
       ]
     },
@@ -66,17 +129,35 @@ export const projectData = {
         {
           id: "10",
           nombre: "Aumentar cantidad de listeners en tiendas digitales",
-          subtareas: ["10.1", "10.2", "10.3", "10.4", "10.5", "10.6"]
+          subtareas: [
+            "Optimizar perfil de Spotify for Artists",
+            "Enviar música a 50+ playlist curators",
+            "Crear y promover playlists propias",
+            "Lanzar campaña de pre-save antes de lanzamientos",
+            "Usar Spotify Canvas y videos en Apple Music",
+            "Colaborar con artistas para cross-promotion"
+          ]
         },
         {
           id: "11",
           nombre: "Aumentar la cantidad de listeners de edades de 18 a 22 años",
-          subtareas: ["11.1", "11.2", "11.3", "11.4", "11.5"]
+          subtareas: [
+            "Crear contenido en TikTok dirigido a Gen Z",
+            "Usar tendencias y sounds virales",
+            "Colaborar con creadores de contenido jóvenes",
+            "Lanzar ads en plataformas de streaming segmentados por edad",
+            "Participar en playlists populares entre jóvenes"
+          ]
         },
         {
           id: "12",
           nombre: "Incrementar Suscriptores en plataformas musicales",
-          subtareas: ["12.1", "12.2", "12.3", "12.4"]
+          subtareas: [
+            "Crear llamados a acción para suscribirse",
+            "Ofrecer contenido exclusivo para suscriptores",
+            "Promocionar perfil verificado en plataformas",
+            "Lanzar campañas de 'Follow' en redes sociales"
+          ]
         }
       ]
     },
@@ -87,12 +168,23 @@ export const projectData = {
         {
           id: "13",
           nombre: "Reactivar el mercado y aumentar posicionamiento",
-          subtareas: ["13.1", "13.2", "13.3", "13.4"]
+          subtareas: [
+            "Lanzar campaña de regreso con nuevo single",
+            "Realizar showcase en vivo en mercado objetivo",
+            "Contactar medios locales para entrevistas",
+            "Crear contenido específico para el mercado local"
+          ]
         },
         {
           id: "14",
           nombre: "Potencializar el brand awareness",
-          subtareas: ["14.1", "14.2", "14.3", "14.4", "14.5"]
+          subtareas: [
+            "Definir identidad visual consistente",
+            "Crear press kit profesional (EPK)",
+            "Desarrollar storytelling de marca",
+            "Lanzar campaña de branding en redes",
+            "Conseguir features en medios musicales importantes"
+          ]
         }
       ]
     },
@@ -103,7 +195,11 @@ export const projectData = {
         {
           id: "15",
           nombre: "Integrar herramientas para el seguimiento de los KPIs",
-          subtareas: ["15.1", "15.2", "15.3"]
+          subtareas: [
+            "Configurar dashboards en Spotify for Artists",
+            "Integrar Google Analytics para web",
+            "Crear reportes mensuales automatizados"
+          ]
         }
       ]
     }

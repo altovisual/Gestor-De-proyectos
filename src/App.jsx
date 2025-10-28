@@ -10,6 +10,7 @@ import { projectData } from './data/projectData';
 import * as XLSX from 'xlsx';
 import { SmallCardsView, ListView, KanbanView, QuartersView } from './components/TaskViews';
 import KPIManager from './components/KPIManager';
+import LaunchTimeline from './components/LaunchTimeline';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -50,30 +51,21 @@ function App() {
   const [filteredNewTaskResponsableSuggestions, setFilteredNewTaskResponsableSuggestions] = useState([]);
   const [kpis, setKpis] = useState([]);
   const [showKPIs, setShowKPIs] = useState(false);
+  const [launches, setLaunches] = useState([]);
+  const [showLaunches, setShowLaunches] = useState(false);
 
-  // Cargar tareas, participantes, perspectivas y KPIs desde localStorage
+  // Cargar tareas, participantes, perspectivas, KPIs y lanzamientos desde localStorage
   useEffect(() => {
     const savedTasks = localStorage.getItem('proyectoDayanTasks');
     const savedParticipants = localStorage.getItem('proyectoDayanParticipants');
     const savedPerspectives = localStorage.getItem('proyectoDayanPerspectives');
     const savedKPIs = localStorage.getItem('proyectoDayanKPIs');
+    const savedLaunches = localStorage.getItem('proyectoDayanLaunches');
     
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks));
-    }
-    
-    if (savedParticipants) {
-      setGlobalParticipants(JSON.parse(savedParticipants));
-    }
-    
-    if (savedPerspectives) {
-      setCustomPerspectives(JSON.parse(savedPerspectives));
-    }
-    
-    if (savedKPIs) {
-      setKpis(JSON.parse(savedKPIs));
     } else {
-      // Inicializar con algunas tareas de ejemplo
+      // Inicializar con tareas de ejemplo desde projectData
       const initialTasks = [];
       projectData.perspectivas.forEach(perspectiva => {
         perspectiva.actividades.forEach(actividad => {
@@ -88,15 +80,31 @@ function App() {
             fechaFin: '',
             estatus: 'pendiente',
             prioridad: 'media',
-            subtareas: actividad.subtareas.map(st => ({
-              id: st,
-              nombre: `Subtarea ${st}`,
+            subtareas: actividad.subtareas.map((st, index) => ({
+              id: `${perspectiva.id}-${actividad.id}-${index}`,
+              nombre: st,
               completada: false
             }))
           });
         });
       });
       setTasks(initialTasks);
+    }
+    
+    if (savedParticipants) {
+      setGlobalParticipants(JSON.parse(savedParticipants));
+    }
+    
+    if (savedPerspectives) {
+      setCustomPerspectives(JSON.parse(savedPerspectives));
+    }
+    
+    if (savedKPIs) {
+      setKpis(JSON.parse(savedKPIs));
+    }
+    
+    if (savedLaunches) {
+      setLaunches(JSON.parse(savedLaunches));
     }
   }, []);
 
@@ -121,6 +129,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem('proyectoDayanKPIs', JSON.stringify(kpis));
   }, [kpis]);
+
+  // Guardar lanzamientos en localStorage
+  useEffect(() => {
+    localStorage.setItem('proyectoDayanLaunches', JSON.stringify(launches));
+  }, [launches]);
 
   const updateTask = (taskId, updates) => {
     setTasks(tasks.map(task => 
@@ -536,7 +549,28 @@ function App() {
             {/* Chips minimalistas - Responsive */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
-                onClick={() => setShowKPIs(!showKPIs)}
+                onClick={() => {
+                  setShowLaunches(!showLaunches);
+                  setShowKPIs(false);
+                }}
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                  showLaunches 
+                    ? 'bg-purple-500 text-white hover:bg-purple-600' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <span className="hidden md:inline">Lanzamientos</span>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                  {launches.length}
+                </span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowKPIs(!showKPIs);
+                  setShowLaunches(false);
+                }}
                 className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
                   showKPIs 
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
@@ -588,8 +622,10 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        {/* Mostrar KPIs o Dashboard normal */}
-        {showKPIs ? (
+        {/* Mostrar Lanzamientos, KPIs o Dashboard normal */}
+        {showLaunches ? (
+          <LaunchTimeline launches={launches} setLaunches={setLaunches} />
+        ) : showKPIs ? (
           <KPIManager kpis={kpis} setKpis={setKpis} tasks={tasks} />
         ) : (
           <>
