@@ -9,6 +9,7 @@ import { Chip } from './components/ui/Chip';
 import { projectData } from './data/projectData';
 import * as XLSX from 'xlsx';
 import { SmallCardsView, ListView, KanbanView, QuartersView } from './components/TaskViews';
+import KPIManager from './components/KPIManager';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -47,12 +48,15 @@ function App() {
   const [selectedPriority, setSelectedPriority] = useState(null); // null = todos, 'alta', 'media', 'baja'
   const [showNewTaskResponsableSuggestions, setShowNewTaskResponsableSuggestions] = useState(false);
   const [filteredNewTaskResponsableSuggestions, setFilteredNewTaskResponsableSuggestions] = useState([]);
+  const [kpis, setKpis] = useState([]);
+  const [showKPIs, setShowKPIs] = useState(false);
 
-  // Cargar tareas, participantes y perspectivas desde localStorage
+  // Cargar tareas, participantes, perspectivas y KPIs desde localStorage
   useEffect(() => {
     const savedTasks = localStorage.getItem('proyectoDayanTasks');
     const savedParticipants = localStorage.getItem('proyectoDayanParticipants');
     const savedPerspectives = localStorage.getItem('proyectoDayanPerspectives');
+    const savedKPIs = localStorage.getItem('proyectoDayanKPIs');
     
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks));
@@ -64,6 +68,10 @@ function App() {
     
     if (savedPerspectives) {
       setCustomPerspectives(JSON.parse(savedPerspectives));
+    }
+    
+    if (savedKPIs) {
+      setKpis(JSON.parse(savedKPIs));
     } else {
       // Inicializar con algunas tareas de ejemplo
       const initialTasks = [];
@@ -108,6 +116,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem('proyectoDayanPerspectives', JSON.stringify(customPerspectives));
   }, [customPerspectives]);
+
+  // Guardar KPIs en localStorage
+  useEffect(() => {
+    localStorage.setItem('proyectoDayanKPIs', JSON.stringify(kpis));
+  }, [kpis]);
 
   const updateTask = (taskId, updates) => {
     setTasks(tasks.map(task => 
@@ -523,6 +536,21 @@ function App() {
             {/* Chips minimalistas - Responsive */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
+                onClick={() => setShowKPIs(!showKPIs)}
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                  showKPIs 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <span className="hidden md:inline">KPIs</span>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                  {kpis.length}
+                </span>
+              </button>
+              
+              <button
                 onClick={() => setShowPerspectivesManager(true)}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm"
               >
@@ -560,6 +588,11 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        {/* Mostrar KPIs o Dashboard normal */}
+        {showKPIs ? (
+          <KPIManager kpis={kpis} setKpis={setKpis} tasks={tasks} />
+        ) : (
+          <>
         {/* Objetivo - Minimalista */}
         <Card className="mb-6 border-gray-200 hover:border-gray-300 transition-all duration-200">
           <CardHeader className="pb-4">
@@ -1190,6 +1223,8 @@ function App() {
               <p className="text-gray-600">No se encontraron tareas</p>
             </CardContent>
           </Card>
+        )}
+          </>
         )}
       </main>
 
