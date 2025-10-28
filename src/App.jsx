@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid } from 'lucide-react';
+import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from './components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card';
@@ -11,6 +11,7 @@ import * as XLSX from 'xlsx';
 import { SmallCardsView, ListView, KanbanView, QuartersView } from './components/TaskViews';
 import KPIManager from './components/KPIManager';
 import LaunchTimeline from './components/LaunchTimeline';
+import SimpleIdeasManager from './components/SimpleIdeasManager';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -53,6 +54,8 @@ function App() {
   const [showKPIs, setShowKPIs] = useState(false);
   const [launches, setLaunches] = useState([]);
   const [showLaunches, setShowLaunches] = useState(false);
+  const [ideas, setIdeas] = useState([]);
+  const [showIdeas, setShowIdeas] = useState(false);
 
   // Cargar tareas, participantes, perspectivas, KPIs y lanzamientos desde localStorage
   useEffect(() => {
@@ -106,6 +109,11 @@ function App() {
     if (savedLaunches) {
       setLaunches(JSON.parse(savedLaunches));
     }
+
+    const savedIdeas = localStorage.getItem('proyectoDayanIdeas');
+    if (savedIdeas) {
+      setIdeas(JSON.parse(savedIdeas));
+    }
   }, []);
 
   // Guardar tareas en localStorage
@@ -134,6 +142,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem('proyectoDayanLaunches', JSON.stringify(launches));
   }, [launches]);
+
+  // Guardar ideas en localStorage
+  useEffect(() => {
+    localStorage.setItem('proyectoDayanIdeas', JSON.stringify(ideas));
+  }, [ideas]);
 
   const updateTask = (taskId, updates) => {
     setTasks(tasks.map(task => 
@@ -552,6 +565,7 @@ function App() {
                 onClick={() => {
                   setShowLaunches(!showLaunches);
                   setShowKPIs(false);
+                  setShowIdeas(false);
                 }}
                 className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
                   showLaunches 
@@ -565,11 +579,31 @@ function App() {
                   {launches.length}
                 </span>
               </button>
+
+              <button
+                onClick={() => {
+                  setShowIdeas(!showIdeas);
+                  setShowKPIs(false);
+                  setShowLaunches(false);
+                }}
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                  showIdeas 
+                    ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <span className="hidden md:inline">Ideas</span>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                  {ideas.length}
+                </span>
+              </button>
               
               <button
                 onClick={() => {
                   setShowKPIs(!showKPIs);
                   setShowLaunches(false);
+                  setShowIdeas(false);
                 }}
                 className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
                   showKPIs 
@@ -622,9 +656,11 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        {/* Mostrar Lanzamientos, KPIs o Dashboard normal */}
+        {/* Mostrar Lanzamientos, Ideas, KPIs o Dashboard normal */}
         {showLaunches ? (
           <LaunchTimeline launches={launches} setLaunches={setLaunches} />
+        ) : showIdeas ? (
+          <SimpleIdeasManager ideas={ideas} setIdeas={setIdeas} />
         ) : showKPIs ? (
           <KPIManager kpis={kpis} setKpis={setKpis} tasks={tasks} />
         ) : (
