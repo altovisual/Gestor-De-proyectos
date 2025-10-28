@@ -9,19 +9,36 @@ import {
   Users,
   Trash2,
   X,
-  BarChart3
+  BarChart3,
+  Upload,
+  Image,
+  Music,
+  Video,
+  Link,
+  FileText,
+  Download,
+  Eye,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import { processFile, deleteFile, formatFileSize } from '../lib/fileStorage';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 const SimpleIdeasManager = ({ ideas, setIdeas }) => {
   const [showAddIdea, setShowAddIdea] = useState(false);
   const [showEvaluate, setShowEvaluate] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState(null);
+  const [newReference, setNewReference] = useState({ tipo: '', url: '', nombre: '' });
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
   
   const [newIdea, setNewIdea] = useState({
     titulo: '',
     categoria: '',
     descripcion: '',
-    propuestoPor: ''
+    propuestoPor: '',
+    referencias: []
   });
 
   const [evaluation, setEvaluation] = useState({
@@ -95,6 +112,92 @@ const SimpleIdeasManager = ({ ideas, setIdeas }) => {
   const deleteIdea = (ideaId) => {
     if (window.confirm('¿Eliminar esta idea?')) {
       setIdeas(ideas.filter(idea => idea.id !== ideaId));
+    }
+  };
+
+  const handleFileUpload = async (e, ideaId) => {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) return;
+
+    setUploadingFiles(true);
+    setUploadError(null);
+
+    try {
+      for (const file of files) {
+        // Procesar archivo (subirá a Supabase o localStorage según configuración y tamaño)
+        const reference = await processFile(file, ideaId);
+        addReferenceToIdea(ideaId, reference);
+      }
+    } catch (error) {
+      console.error('Error subiendo archivos:', error);
+      setUploadError(error.message || 'Error al subir archivos');
+    } finally {
+      setUploadingFiles(false);
+      // Limpiar el input
+      e.target.value = '';
+    }
+  };
+
+  const addReferenceToIdea = (ideaId, reference) => {
+    const updatedIdeas = ideas.map(idea =>
+      idea.id === ideaId
+        ? { ...idea, referencias: [...(idea.referencias || []), reference] }
+        : idea
+    );
+    setIdeas(updatedIdeas);
+    if (selectedIdea?.id === ideaId) {
+      setSelectedIdea(updatedIdeas.find(i => i.id === ideaId));
+    }
+  };
+
+  const addLinkReference = (ideaId) => {
+    if (newReference.url && newReference.nombre) {
+      const linkRef = {
+        id: Date.now().toString() + Math.random(),
+        tipo: 'enlace',
+        nombre: newReference.nombre,
+        url: newReference.url,
+        fechaSubida: new Date().toISOString()
+      };
+      addReferenceToIdea(ideaId, linkRef);
+      setNewReference({ tipo: '', url: '', nombre: '' });
+    }
+  };
+
+  const deleteReference = async (ideaId, refId) => {
+    const idea = ideas.find(i => i.id === ideaId);
+    const reference = idea?.referencias?.find(r => r.id === refId);
+    
+    if (!reference) return;
+
+    try {
+      // Eliminar del storage (Supabase o local)
+      await deleteFile(reference);
+      
+      // Actualizar estado
+      const updatedIdeas = ideas.map(idea =>
+        idea.id === ideaId
+          ? { ...idea, referencias: idea.referencias.filter(r => r.id !== refId) }
+          : idea
+      );
+      setIdeas(updatedIdeas);
+      if (selectedIdea?.id === ideaId) {
+        setSelectedIdea(updatedIdeas.find(i => i.id === ideaId));
+      }
+    } catch (error) {
+      console.error('Error eliminando referencia:', error);
+      alert('Error al eliminar el archivo');
+    }
+  };
+
+  const getFileIcon = (tipo) => {
+    switch(tipo) {
+      case 'imagen': return Image;
+      case 'audio': return Music;
+      case 'video': return Video;
+      case 'enlace': return Link;
+      default: return FileText;
     }
   };
 
@@ -179,7 +282,14 @@ const SimpleIdeasManager = ({ ideas, setIdeas }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedIdeas.map(idea => (
-            <Card key={idea.id} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={idea.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => {
+                setSelectedIdea(idea);
+                setShowDetailModal(true);
+              }}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
@@ -191,7 +301,8 @@ const SimpleIdeasManager = ({ ideas, setIdeas }) => {
                   <div className="flex gap-1">
                     {!idea.evaluacion && (
                       <button
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedIdea(idea);
                           setShowEvaluate(true);
                         }}
@@ -202,7 +313,10 @@ const SimpleIdeasManager = ({ ideas, setIdeas }) => {
                       </button>
                     )}
                     <button
-                      onClick={() => deleteIdea(idea.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteIdea(idea.id);
+                      }}
                       className="p-1.5 hover:bg-red-100 rounded-lg"
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
@@ -365,6 +479,247 @@ const SimpleIdeasManager = ({ ideas, setIdeas }) => {
                   <Button onClick={() => evaluateIdea(selectedIdea.id)} className="flex-1">Guardar Evaluación</Button>
                   <Button onClick={() => { setShowEvaluate(false); setSelectedIdea(null); }} variant="outline">Cancelar</Button>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Detalles de Idea */}
+      {showDetailModal && selectedIdea && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="flex flex-row items-center justify-between sticky top-0 bg-white z-10 border-b">
+              <div className="flex-1">
+                <Badge variant="secondary" className="mb-2">
+                  {categorias.find(c => c.id === selectedIdea.categoria)?.nombre}
+                </Badge>
+                <CardTitle>{selectedIdea.titulo}</CardTitle>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedIdea(null);
+                }}
+                className="p-1.5 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Información básica */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Descripción</h3>
+                <p className="text-gray-600">{selectedIdea.descripcion || 'Sin descripción'}</p>
+              </div>
+
+              {selectedIdea.propuestoPor && (
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">Propuesto por</h3>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="w-4 h-4" />
+                    <span>{selectedIdea.propuestoPor}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Evaluación */}
+              {selectedIdea.puntuacion !== null && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-3">Evaluación</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600">{selectedIdea.puntuacion}/10</div>
+                      <Badge variant={selectedIdea.prioridad === 'alta' ? 'destructive' : 'secondary'} className="mt-2">
+                        Prioridad {selectedIdea.prioridad?.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Impacto:</span>
+                        <span className="font-medium">{selectedIdea.evaluacion?.impacto}/10</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Viabilidad:</span>
+                        <span className="font-medium">{selectedIdea.evaluacion?.viabilidad}/10</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Alineación:</span>
+                        <span className="font-medium">{selectedIdea.evaluacion?.alineacion}/10</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Urgencia:</span>
+                        <span className="font-medium">{selectedIdea.evaluacion?.urgencia}/10</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Referencias */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-3">Referencias y Archivos</h3>
+                
+                {/* Subir archivos */}
+                <div className="mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors">
+                  <label className={`cursor-pointer block ${uploadingFiles ? 'pointer-events-none opacity-50' : ''}`}>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,audio/*,video/*,.pdf,.doc,.docx"
+                      onChange={(e) => handleFileUpload(e, selectedIdea.id)}
+                      className="hidden"
+                      disabled={uploadingFiles}
+                    />
+                    <div className="text-center">
+                      {uploadingFiles ? (
+                        <Loader2 className="w-8 h-8 text-blue-500 mx-auto mb-2 animate-spin" />
+                      ) : (
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      )}
+                      <p className="text-sm text-gray-600">
+                        {uploadingFiles ? 'Subiendo archivos...' : 'Click para subir archivos'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {isSupabaseConfigured() 
+                          ? 'Imágenes, audio, video, documentos (sin límite de tamaño)'
+                          : 'Archivos pequeños < 2MB (Supabase no configurado)'}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Error de subida */}
+                {uploadError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-900">Error al subir archivo</p>
+                      <p className="text-xs text-red-700 mt-1">{uploadError}</p>
+                    </div>
+                    <button
+                      onClick={() => setUploadError(null)}
+                      className="ml-auto text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Agregar enlace */}
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Agregar Enlace</h4>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nombre del enlace"
+                      value={newReference.nombre}
+                      onChange={(e) => setNewReference({ ...newReference, nombre: e.target.value })}
+                      className="flex-1"
+                    />
+                    <Input
+                      placeholder="URL"
+                      value={newReference.url}
+                      onChange={(e) => setNewReference({ ...newReference, url: e.target.value })}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={() => addLinkReference(selectedIdea.id)}
+                      size="sm"
+                      disabled={!newReference.nombre || !newReference.url}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Lista de referencias */}
+                {selectedIdea.referencias && selectedIdea.referencias.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedIdea.referencias.map(ref => {
+                      const IconComponent = getFileIcon(ref.tipo);
+                      return (
+                        <div
+                          key={ref.id}
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <IconComponent className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {ref.nombre}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {ref.tipo} • {ref.size ? formatFileSize(ref.size) : ''} • {new Date(ref.fechaSubida).toLocaleDateString()}
+                              {ref.storage && (
+                                <span className="ml-1 px-1.5 py-0.5 bg-gray-200 rounded text-xs">
+                                  {ref.storage === 'supabase' ? '☁️ Cloud' : '💾 Local'}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            {ref.tipo === 'enlace' ? (
+                              <a
+                                href={ref.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 hover:bg-blue-100 rounded-lg"
+                                title="Abrir enlace"
+                              >
+                                <Eye className="w-4 h-4 text-blue-500" />
+                              </a>
+                            ) : (
+                              <a
+                                href={ref.url}
+                                download={ref.nombre}
+                                className="p-1.5 hover:bg-green-100 rounded-lg"
+                                title="Descargar"
+                              >
+                                <Download className="w-4 h-4 text-green-500" />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => deleteReference(selectedIdea.id, ref.id)}
+                              className="p-1.5 hover:bg-red-100 rounded-lg"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center py-4">
+                    No hay referencias todavía. Sube archivos o agrega enlaces.
+                  </p>
+                )}
+              </div>
+
+              {/* Acciones */}
+              <div className="flex gap-2 pt-4 border-t">
+                {!selectedIdea.evaluacion && (
+                  <Button
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setShowEvaluate(true);
+                    }}
+                    className="flex-1"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Evaluar Idea
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setSelectedIdea(null);
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cerrar
+                </Button>
               </div>
             </CardContent>
           </Card>
