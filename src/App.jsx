@@ -492,71 +492,74 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header minimalista estilo iOS */}
+      {/* Header minimalista estilo iOS - Responsive */}
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-2 sm:py-3">
+          <div className="flex items-center justify-between gap-2">
             {/* Logo y Título */}
-            <div className="flex items-center gap-3">
-              <div className="bg-gray-50 p-2 rounded-xl">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="bg-gray-50 p-1.5 sm:p-2 rounded-lg sm:rounded-xl flex-shrink-0">
                 <img 
                   src="/mvpx.png" 
                   alt="Logo MVPX" 
-                  className="w-10 h-10 object-contain"
+                  className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
                 />
-                <div className="bg-gray-100 p-2.5 rounded-xl hidden">
-                  <Music className="w-5 h-5 text-gray-600" />
+                <div className="bg-gray-100 p-2 sm:p-2.5 rounded-lg sm:rounded-xl hidden">
+                  <Music className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
                   Proyecto Dayan
                 </h1>
-                <p className="text-xs text-gray-500">Cronograma Musical</p>
+                <p className="text-xs text-gray-500 hidden sm:block">Cronograma Musical</p>
               </div>
             </div>
             
-            {/* Chips minimalistas */}
-            <div className="flex items-center gap-2">
+            {/* Chips minimalistas - Responsive */}
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={() => setShowPerspectivesManager(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm font-medium transition-all duration-200 hover:shadow-sm"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm"
               >
-                <Target className="w-3.5 h-3.5" />
-                <span>Perspectivas</span>
-                <span className="px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <span className="hidden md:inline">Perspectivas</span>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {getAllPerspectives().length}
                 </span>
               </button>
               
               <button
                 onClick={() => setShowParticipantsManager(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm font-medium transition-all duration-200 hover:shadow-sm"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm"
               >
-                <Users className="w-3.5 h-3.5" />
-                <span>Participantes</span>
-                <span className="px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                <Users className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <span className="hidden md:inline">Participantes</span>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {globalParticipants.length}
                 </span>
               </button>
               
               <button
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm font-medium transition-all duration-200 hover:shadow-md"
+                className="hidden sm:flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Exportar</span>
+                <Download className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <span className="hidden lg:inline">Exportar</span>
+                <span className="lg:hidden">
+                  <Download className="w-3.5 h-3.5" />
+                </span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Objetivo - Minimalista */}
         <Card className="mb-6 border-gray-200 hover:border-gray-300 transition-all duration-200">
           <CardHeader className="pb-4">
@@ -572,213 +575,221 @@ function App() {
           </CardHeader>
         </Card>
 
-        {/* Stats - Minimalista */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+        {/* Stats - Minimalista Responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
           <button
             onClick={() => setSelectedStatus(null)}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedStatus === null 
                 ? 'border-gray-900 bg-gray-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">Total Tareas</span>
-              <div className="p-1.5 bg-gray-100 rounded-lg">
-                <Calendar className="w-4 h-4 text-gray-600" />
+              <div className="p-1 sm:p-1.5 bg-gray-100 rounded-lg">
+                <Calendar className="w-3 sm:w-4 h-3 sm:h-4 text-gray-600" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
           </button>
           <button
             onClick={() => setSelectedStatus(selectedStatus === 'completado' ? null : 'completado')}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedStatus === 'completado' 
                 ? 'border-green-500 bg-green-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">Completadas</span>
-              <div className={`p-1.5 rounded-lg ${selectedStatus === 'completado' ? 'bg-green-100' : 'bg-gray-100'}`}>
-                <Check className={`w-4 h-4 ${selectedStatus === 'completado' ? 'text-green-600' : 'text-gray-600'}`} />
+              <div className={`p-1 sm:p-1.5 rounded-lg ${selectedStatus === 'completado' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <Check className={`w-3 sm:w-4 h-3 sm:h-4 ${selectedStatus === 'completado' ? 'text-green-600' : 'text-gray-600'}`} />
               </div>
             </div>
-            <p className={`text-2xl font-bold ${selectedStatus === 'completado' ? 'text-green-600' : 'text-gray-900'}`}>
+            <p className={`text-xl sm:text-2xl font-bold ${selectedStatus === 'completado' ? 'text-green-600' : 'text-gray-900'}`}>
               {stats.completado}
             </p>
           </button>
           
           <button
             onClick={() => setSelectedStatus(selectedStatus === 'en-progreso' ? null : 'en-progreso')}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedStatus === 'en-progreso' 
                 ? 'border-orange-500 bg-orange-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">En Progreso</span>
-              <div className={`p-1.5 rounded-lg ${selectedStatus === 'en-progreso' ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                <Clock className={`w-4 h-4 ${selectedStatus === 'en-progreso' ? 'text-orange-600' : 'text-gray-600'}`} />
+              <div className={`p-1 sm:p-1.5 rounded-lg ${selectedStatus === 'en-progreso' ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                <Clock className={`w-3 sm:w-4 h-3 sm:h-4 ${selectedStatus === 'en-progreso' ? 'text-orange-600' : 'text-gray-600'}`} />
               </div>
             </div>
-            <p className={`text-2xl font-bold ${selectedStatus === 'en-progreso' ? 'text-orange-600' : 'text-gray-900'}`}>
+            <p className={`text-xl sm:text-2xl font-bold ${selectedStatus === 'en-progreso' ? 'text-orange-600' : 'text-gray-900'}`}>
               {stats.enProgreso}
             </p>
           </button>
           
           <button
             onClick={() => setSelectedStatus(selectedStatus === 'pendiente' ? null : 'pendiente')}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedStatus === 'pendiente' 
                 ? 'border-gray-900 bg-gray-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">Pendientes</span>
-              <div className="p-1.5 bg-gray-100 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-gray-600" />
+              <div className="p-1 sm:p-1.5 bg-gray-100 rounded-lg">
+                <AlertCircle className="w-3 sm:w-4 h-3 sm:h-4 text-gray-600" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.pendiente}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.pendiente}</p>
           </button>
         </div>
 
-        {/* Priority Stats - Minimalista */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+        {/* Priority Stats - Minimalista Responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
           <button
             onClick={() => setSelectedPriority(selectedPriority === 'alta' ? null : 'alta')}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedPriority === 'alta' 
                 ? 'border-red-500 bg-red-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">🔴 Alta Prioridad</span>
-              <div className={`p-1.5 rounded-lg ${selectedPriority === 'alta' ? 'bg-red-100' : 'bg-gray-100'}`}>
-                <AlertCircle className={`w-4 h-4 ${selectedPriority === 'alta' ? 'text-red-600' : 'text-gray-600'}`} />
+              <div className={`p-1 sm:p-1.5 rounded-lg ${selectedPriority === 'alta' ? 'bg-red-100' : 'bg-gray-100'}`}>
+                <AlertCircle className={`w-3 sm:w-4 h-3 sm:h-4 ${selectedPriority === 'alta' ? 'text-red-600' : 'text-gray-600'}`} />
               </div>
             </div>
-            <p className={`text-2xl font-bold ${selectedPriority === 'alta' ? 'text-red-600' : 'text-gray-900'}`}>
+            <p className={`text-xl sm:text-2xl font-bold ${selectedPriority === 'alta' ? 'text-red-600' : 'text-gray-900'}`}>
               {stats.alta}
             </p>
           </button>
           
           <button
             onClick={() => setSelectedPriority(selectedPriority === 'media' ? null : 'media')}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedPriority === 'media' 
                 ? 'border-yellow-500 bg-yellow-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">🟡 Media Prioridad</span>
-              <div className={`p-1.5 rounded-lg ${selectedPriority === 'media' ? 'bg-yellow-100' : 'bg-gray-100'}`}>
-                <Clock className={`w-4 h-4 ${selectedPriority === 'media' ? 'text-yellow-600' : 'text-gray-600'}`} />
+              <div className={`p-1 sm:p-1.5 rounded-lg ${selectedPriority === 'media' ? 'bg-yellow-100' : 'bg-gray-100'}`}>
+                <Clock className={`w-3 sm:w-4 h-3 sm:h-4 ${selectedPriority === 'media' ? 'text-yellow-600' : 'text-gray-600'}`} />
               </div>
             </div>
-            <p className={`text-2xl font-bold ${selectedPriority === 'media' ? 'text-yellow-600' : 'text-gray-900'}`}>
+            <p className={`text-xl sm:text-2xl font-bold ${selectedPriority === 'media' ? 'text-yellow-600' : 'text-gray-900'}`}>
               {stats.media}
             </p>
           </button>
           
           <button
             onClick={() => setSelectedPriority(selectedPriority === 'baja' ? null : 'baja')}
-            className={`text-left p-4 rounded-2xl border-2 transition-all duration-200 ${
+            className={`text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-200 ${
               selectedPriority === 'baja' 
                 ? 'border-green-500 bg-green-50 shadow-sm' 
                 : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1 sm:mb-2">
               <span className="text-xs font-medium text-gray-500">🟢 Baja Prioridad</span>
-              <div className={`p-1.5 rounded-lg ${selectedPriority === 'baja' ? 'bg-green-100' : 'bg-gray-100'}`}>
-                <Check className={`w-4 h-4 ${selectedPriority === 'baja' ? 'text-green-600' : 'text-gray-600'}`} />
+              <div className={`p-1 sm:p-1.5 rounded-lg ${selectedPriority === 'baja' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <Check className={`w-3 sm:w-4 h-3 sm:h-4 ${selectedPriority === 'baja' ? 'text-green-600' : 'text-gray-600'}`} />
               </div>
             </div>
-            <p className={`text-2xl font-bold ${selectedPriority === 'baja' ? 'text-green-600' : 'text-gray-900'}`}>
+            <p className={`text-xl sm:text-2xl font-bold ${selectedPriority === 'baja' ? 'text-green-600' : 'text-gray-900'}`}>
               {stats.baja}
             </p>
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Filters - Responsive */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
           <Input
             placeholder="Buscar tareas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 rounded-xl"
+            className="flex-1 rounded-xl text-sm"
           />
           <select
             value={selectedPerspective || ''}
             onChange={(e) => setSelectedPerspective(e.target.value || null)}
-            className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 sm:px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm"
           >
             <option value="">Todas las Perspectivas</option>
             {getAllPerspectives().map((p, idx) => (
               <option key={idx} value={p}>{p}</option>
             ))}
           </select>
-          <Button onClick={() => setShowAddTask(!showAddTask)} variant="outline" className="gap-2 rounded-xl">
+          <Button onClick={() => setShowAddTask(!showAddTask)} className="rounded-xl gap-2 text-sm whitespace-nowrap">
             <Plus className="w-4 h-4" />
-            Nueva Tarea
+            <span className="hidden sm:inline">Nueva Tarea</span>
+            <span className="sm:hidden">Nueva</span>
           </Button>
         </div>
 
-        {/* View Mode Selector */}
-        <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-white rounded-xl border border-gray-200">
-          <span className="text-sm font-medium text-gray-700">Vista:</span>
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('cards')}
-              className="gap-2 rounded-xl"
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Tarjetas
-            </Button>
-            <Button
-              variant={viewMode === 'small-cards' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('small-cards')}
-              className="gap-2 rounded-xl"
-            >
-              <Grid className="w-4 h-4" />
-              Compacto
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="gap-2 rounded-xl"
-            >
-              <List className="w-4 h-4" />
-              Lista
-            </Button>
-            <Button
-              variant={viewMode === 'kanban' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('kanban')}
-              className="gap-2 rounded-xl"
-            >
-              <Columns className="w-4 h-4" />
-              Kanban
-            </Button>
-            <Button
-              variant={viewMode === 'quarters' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('quarters')}
-              className="gap-2 rounded-xl"
-            >
-              <Calendar className="w-4 h-4" />
-              Quarters
-            </Button>
+        {/* View Mode Selector - Responsive */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <span className="text-xs sm:text-sm font-medium text-gray-600 mr-1 sm:mr-2 flex-shrink-0">Vista:</span>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'cards' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('cards')}
+                className="gap-2 rounded-xl"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Tarjetas</span>
+                <span className="sm:hidden">Tarjetas</span>
+              </Button>
+              <Button
+                variant={viewMode === 'small-cards' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('small-cards')}
+                className="gap-2 rounded-xl"
+              >
+                <Grid className="w-4 h-4" />
+                <span className="hidden sm:inline">Compacto</span>
+                <span className="sm:hidden">Compacto</span>
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="gap-2 rounded-xl"
+              >
+                <List className="w-4 h-4" />
+                <span className="hidden sm:inline">Lista</span>
+                <span className="sm:hidden">Lista</span>
+              </Button>
+              <Button
+                variant={viewMode === 'kanban' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('kanban')}
+                className="gap-2 rounded-xl"
+              >
+                <Columns className="w-4 h-4" />
+                <span className="hidden sm:inline">Kanban</span>
+                <span className="sm:hidden">Kanban</span>
+              </Button>
+              <Button
+                variant={viewMode === 'quarters' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('quarters')}
+                className="gap-2 rounded-xl"
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline">Quarters</span>
+                <span className="sm:hidden">Quarters</span>
+              </Button>
+            </div>
           </div>
         </div>
 
