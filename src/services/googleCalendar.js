@@ -20,8 +20,8 @@ class GoogleCalendarService {
     }
 
     try {
-      // Agregar parámetro para NO enviar notificaciones automáticas de Google
-      const response = await fetch(`${this.baseUrl}/calendars/primary/events?sendNotifications=false&sendUpdates=none`, {
+      // Enviar notificaciones a todos los invitados (attendees)
+      const response = await fetch(`${this.baseUrl}/calendars/primary/events?sendNotifications=true&sendUpdates=all`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -52,7 +52,7 @@ class GoogleCalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/calendars/primary/events/${eventId}?sendNotifications=false&sendUpdates=none`, {
+      const response = await fetch(`${this.baseUrl}/calendars/primary/events/${eventId}?sendNotifications=true&sendUpdates=all`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -109,8 +109,25 @@ class GoogleCalendarService {
     const startDate = new Date(task.fechaInicio || task.fecha_inicio);
     const endDate = new Date(task.fechaFin || task.fecha_fin);
 
-    // Crear lista de participantes en la descripción (sin invitarlos como attendees)
-    const participantsList = participants.map(p => p.nombre || p.email).join(', ');
+    // Crear lista de participantes en la descripción
+    const participantsList = participants.map(p => p.nombre || p.name || p.email || p).join(', ');
+
+    // Crear lista de attendees (invitados) con emails válidos
+    const attendees = participants
+      .map(p => {
+        // Extraer email del participante (puede ser objeto o string)
+        let email = null;
+        if (typeof p === 'string') {
+          // Si es string, verificar si es un email válido
+          email = p.includes('@') ? p : null;
+        } else if (p && typeof p === 'object') {
+          // Si es objeto, usar el campo email
+          email = p.email || null;
+        }
+        
+        return email ? { email } : null;
+      })
+      .filter(a => a !== null); // Filtrar participantes sin email válido
 
     const event = {
       summary: `📋 ${task.actividad || task.nombre}`,
@@ -123,7 +140,12 @@ class GoogleCalendarService {
         dateTime: endDate.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
-      // NO incluir attendees para evitar que Google envíe invitaciones automáticas
+      // Incluir attendees para que Google envíe invitaciones a todos los participantes
+      attendees: attendees.length > 0 ? attendees : undefined,
+      // Configurar para enviar invitaciones por email
+      guestsCanModify: false,
+      guestsCanInviteOthers: false,
+      guestsCanSeeOtherGuests: true,
       reminders: {
         useDefault: false,
         overrides: [
@@ -134,6 +156,7 @@ class GoogleCalendarService {
       colorId: this.getColorByStatus(task.estatus || task.estado),
     };
 
+    console.log(`📅 Creando evento con ${attendees.length} participantes invitados`);
     return await this.createEvent(event);
   }
 
@@ -143,7 +166,24 @@ class GoogleCalendarService {
   async updateTaskEvent(eventId, task, participants = []) {
     const startDate = new Date(task.fechaInicio || task.fecha_inicio);
     const endDate = new Date(task.fechaFin || task.fecha_fin);
-    const participantsList = participants.map(p => p.nombre || p.email).join(', ');
+    const participantsList = participants.map(p => p.nombre || p.name || p.email || p).join(', ');
+
+    // Crear lista de attendees (invitados) con emails válidos
+    const attendees = participants
+      .map(p => {
+        // Extraer email del participante (puede ser objeto o string)
+        let email = null;
+        if (typeof p === 'string') {
+          // Si es string, verificar si es un email válido
+          email = p.includes('@') ? p : null;
+        } else if (p && typeof p === 'object') {
+          // Si es objeto, usar el campo email
+          email = p.email || null;
+        }
+        
+        return email ? { email } : null;
+      })
+      .filter(a => a !== null); // Filtrar participantes sin email válido
 
     const eventData = {
       summary: `📋 ${task.actividad || task.nombre}`,
@@ -156,9 +196,12 @@ class GoogleCalendarService {
         dateTime: endDate.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
+      // Incluir attendees actualizados
+      attendees: attendees.length > 0 ? attendees : undefined,
       colorId: this.getColorByStatus(task.estatus || task.estado),
     };
 
+    console.log(`📅 Actualizando evento con ${attendees.length} participantes invitados`);
     return await this.updateEvent(eventId, eventData);
   }
 

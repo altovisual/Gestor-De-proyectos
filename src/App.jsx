@@ -288,7 +288,22 @@ function App() {
       // Crear evento en Google Calendar si está autenticado
       if (isGoogleAuthenticated) {
         try {
-          const calendarEvent = await googleCalendarService.createTaskEvent(task, globalParticipants);
+          // Obtener participantes asignados a esta tarea específica
+          const taskParticipants = task.participantes || [];
+          
+          // Convertir nombres de participantes a objetos con email si están en globalParticipants
+          const participantsWithEmails = taskParticipants.map(participantName => {
+            // Buscar el participante en globalParticipants para obtener su email
+            const globalParticipant = globalParticipants.find(gp => {
+              const gpName = typeof gp === 'string' ? gp : (gp.nombre || gp.name || '');
+              return gpName === participantName;
+            });
+            
+            // Si encontramos el participante con email, devolverlo; si no, devolver el nombre
+            return globalParticipant || participantName;
+          });
+          
+          const calendarEvent = await googleCalendarService.createTaskEvent(task, participantsWithEmails);
           console.log('✅ Evento creado en Google Calendar:', calendarEvent.htmlLink);
           
           // Guardar el ID del evento en la tarea para futuras actualizaciones
@@ -354,10 +369,25 @@ function App() {
       // Actualizar evento en Google Calendar si está autenticado y existe el evento
       if (isGoogleAuthenticated && editingTask.calendar_event_id) {
         try {
+          // Obtener participantes asignados a esta tarea específica
+          const taskParticipants = taskToSave.participantes || [];
+          
+          // Convertir nombres de participantes a objetos con email si están en globalParticipants
+          const participantsWithEmails = taskParticipants.map(participantName => {
+            // Buscar el participante en globalParticipants para obtener su email
+            const globalParticipant = globalParticipants.find(gp => {
+              const gpName = typeof gp === 'string' ? gp : (gp.nombre || gp.name || '');
+              return gpName === participantName;
+            });
+            
+            // Si encontramos el participante con email, devolverlo; si no, devolver el nombre
+            return globalParticipant || participantName;
+          });
+          
           await googleCalendarService.updateTaskEvent(
             editingTask.calendar_event_id,
             taskToSave,
-            globalParticipants
+            participantsWithEmails
           );
           console.log('✅ Evento actualizado en Google Calendar');
         } catch (error) {
@@ -1741,10 +1771,20 @@ function App() {
                         // Filtrar sugerencias
                         if (value.trim()) {
                           const currentParticipants = editingTask.participantes || [];
-                          const suggestions = globalParticipants.filter(p => 
-                            p.toLowerCase().includes(value.toLowerCase()) &&
-                            !currentParticipants.includes(p)
-                          );
+                          const suggestions = globalParticipants.filter(p => {
+                            // Normalizar participante (puede ser string u objeto)
+                            const participantName = typeof p === 'string' 
+                              ? p 
+                              : (p.nombre || p.name || p.email || '');
+                            
+                            // Verificar si ya está en la lista actual
+                            const isAlreadyAdded = currentParticipants.some(cp => {
+                              const cpName = typeof cp === 'string' ? cp : (cp.nombre || cp.name || cp.email || '');
+                              return cpName === participantName;
+                            });
+                            
+                            return participantName.toLowerCase().includes(value.toLowerCase()) && !isAlreadyAdded;
+                          });
                           setFilteredSuggestions(suggestions);
                           setShowSuggestions(suggestions.length > 0);
                         } else {
@@ -1860,19 +1900,31 @@ function App() {
                     <p className="text-sm text-gray-600 mb-2">O selecciona de la lista:</p>
                     <div className="flex flex-wrap gap-2">
                       {globalParticipants
-                        .filter(gp => !(editingTask.participantes || []).includes(gp))
-                        .map((participant, idx) => (
-                        <Chip 
-                          key={idx} 
-                          variant="gray"
-                          className="cursor-pointer hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
-                          onClick={async () => {
-                            await addParticipantToEditingTask(participant);
-                          }}
-                        >
-                          + {participant}
-                        </Chip>
-                      ))}
+                        .filter(gp => {
+                          const gpName = typeof gp === 'string' ? gp : (gp.nombre || gp.name || gp.email || '');
+                          return !(editingTask.participantes || []).some(ep => {
+                            const epName = typeof ep === 'string' ? ep : (ep.nombre || ep.name || ep.email || '');
+                            return epName === gpName;
+                          });
+                        })
+                        .map((participant, idx) => {
+                          const participantName = typeof participant === 'string' 
+                            ? participant 
+                            : (participant.nombre || participant.name || participant.email || 'Participante');
+                          
+                          return (
+                            <Chip 
+                              key={idx} 
+                              variant="gray"
+                              className="cursor-pointer hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                              onClick={async () => {
+                                await addParticipantToEditingTask(participantName);
+                              }}
+                            >
+                              + {participantName}
+                            </Chip>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
