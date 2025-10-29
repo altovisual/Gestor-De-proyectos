@@ -12,7 +12,7 @@ class ProgressTokenHandler {
   async processToken(token) {
     try {
       // Buscar el token en la base de datos
-      const { data: tokenData, error: tokenError } = await supabase
+      const { data: tokenData, error: tokenError} = await supabase
         .from('progress_tokens')
         .select('*')
         .eq('token', token)
@@ -42,14 +42,19 @@ class ProgressTokenHandler {
         };
       }
 
-      // Obtener la tarea actual
-      const { data: task, error: taskError } = await supabase
-        .from('tareas')
-        .select('*')
-        .eq('id', tokenData.task_id)
-        .single();
+      // Obtener las tareas de localStorage
+      const tasksJson = localStorage.getItem('proyectoDayanTasks');
+      if (!tasksJson) {
+        return {
+          success: false,
+          error: 'No se encontraron tareas'
+        };
+      }
 
-      if (taskError || !task) {
+      const tasks = JSON.parse(tasksJson);
+      const task = tasks.find(t => t.id === tokenData.task_id);
+
+      if (!task) {
         return {
           success: false,
           error: 'Tarea no encontrada'
@@ -57,15 +62,15 @@ class ProgressTokenHandler {
       }
 
       // Calcular el nuevo progreso según la acción
-      let newProgress = task.progreso;
-      let newStatus = task.estado;
+      let newProgress = task.progreso || 0;
+      let newStatus = task.estatus || 'pendiente';
 
       switch (tokenData.action) {
         case 'increase_25':
-          newProgress = Math.min(task.progreso + 25, 100);
+          newProgress = Math.min(newProgress + 25, 100);
           if (newProgress >= 100) {
             newStatus = 'completada';
-          } else if (task.estado === 'pendiente') {
+          } else if (newStatus === 'pendiente') {
             newStatus = 'en-progreso';
           }
           break;
@@ -82,24 +87,14 @@ class ProgressTokenHandler {
           };
       }
 
-      // Actualizar la tarea
-      const { data: updatedTask, error: updateError } = await supabase
-        .from('tareas')
-        .update({
-          progreso: newProgress,
-          estado: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tokenData.task_id)
-        .select()
-        .single();
-
-      if (updateError) {
-        return {
-          success: false,
-          error: 'Error al actualizar la tarea'
-        };
-      }
+      // Actualizar la tarea en localStorage
+      const oldProgress = task.progreso || 0;
+      task.progreso = newProgress;
+      task.estatus = newStatus;
+      
+      // Guardar las tareas actualizadas
+      const updatedTasks = tasks.map(t => t.id === task.id ? task : t);
+      localStorage.setItem('proyectoDayanTasks', JSON.stringify(updatedTasks));
 
       // Marcar el token como usado
       await supabase
@@ -111,15 +106,21 @@ class ProgressTokenHandler {
       await this.logProgressUpdate(
         tokenData.task_id,
         tokenData.participant_email,
-        task.progreso,
+        oldProgress,
         newProgress,
         tokenData.action
       );
 
       return {
         success: true,
-        task: updatedTask,
-        oldProgress: task.progreso,
+        task: {
+          ...task,
+          nombre: task.actividad,
+          fecha_inicio: task.fechaInicio,
+          fecha_fin: task.fechaFin,
+          estado: task.estatus
+        },
+        oldProgress: oldProgress,
         newProgress: newProgress,
         action: tokenData.action
       };

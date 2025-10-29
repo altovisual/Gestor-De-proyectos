@@ -137,6 +137,22 @@ function App() {
     };
   }, [tasks]);
 
+  // Detectar taskId en la URL y abrir la tarea automáticamente
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('taskId');
+    
+    if (taskId && tasks.length > 0) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        console.log('📋 Abriendo tarea desde URL:', task);
+        openEditModal(task);
+        // Limpiar el parámetro de la URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [tasks]);
+
   // Guardar participantes en localStorage
   useEffect(() => {
     localStorage.setItem('proyectoDayanParticipants', JSON.stringify(globalParticipants));

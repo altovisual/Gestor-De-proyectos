@@ -51,9 +51,9 @@ class EmailNotificationService {
     const completeToken = await this.createProgressToken(taskId, participantEmail, 'complete');
     
     return {
-      increase25: `${baseUrl}/api/progress?token=${increaseToken}`,
-      complete: `${baseUrl}/api/progress?token=${completeToken}`,
-      viewTask: `${baseUrl}?task=${taskId}`
+      increase25: `${baseUrl}?token=${increaseToken}&action=increase`,
+      complete: `${baseUrl}?token=${completeToken}&action=complete`,
+      viewTask: `${baseUrl}?taskId=${taskId}`
     };
   }
 
