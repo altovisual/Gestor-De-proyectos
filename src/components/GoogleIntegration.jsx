@@ -30,13 +30,22 @@ export function GoogleIntegration({ onClose }) {
     try {
       await googleAuthService.authorize();
       // Esperar un momento para que se complete la autorización
-      setTimeout(() => {
+      setTimeout(async () => {
         checkAuthStatus();
+        
+        // Obtener perfil del usuario
+        const profile = await googleAuthService.getUserProfile();
+        
         setMessage({
           type: 'success',
           text: '✅ Autorización exitosa. Ahora puedes usar Google Calendar y Gmail.'
         });
         setIsLoading(false);
+        
+        // Disparar evento personalizado para notificar a App.jsx
+        window.dispatchEvent(new CustomEvent('google-auth-success', { 
+          detail: { profile } 
+        }));
       }, 2000);
     } catch (error) {
       setMessage({

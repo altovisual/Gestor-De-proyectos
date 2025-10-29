@@ -76,7 +76,7 @@ function App() {
       setIsGoogleAuthenticated(isAuth);
       
       if (isAuth) {
-        const profile = googleAuthService.getUserProfile();
+        const profile = await googleAuthService.getUserProfile();
         if (profile?.email) {
           setUserEmail(profile.email);
           localStorage.setItem('userEmail', profile.email);
@@ -89,6 +89,24 @@ function App() {
     };
     
     initializeUser();
+
+    // Escuchar eventos de autenticación exitosa de Google
+    const handleGoogleAuthSuccess = async (event) => {
+      console.log('✅ Autenticación de Google exitosa, actualizando estado...');
+      const profile = event.detail?.profile;
+      
+      setIsGoogleAuthenticated(true);
+      
+      if (profile?.email) {
+        setUserEmail(profile.email);
+        localStorage.setItem('userEmail', profile.email);
+      }
+      
+      // Forzar actualización del estado de conexión en tiempo real
+      setIsRealtimeConnected(true);
+    };
+
+    window.addEventListener('google-auth-success', handleGoogleAuthSuccess);
 
     // Migración automática y sincronización
     const initializeSync = async () => {
@@ -117,6 +135,7 @@ function App() {
 
     // Limpiar al desmontar
     return () => {
+      window.removeEventListener('google-auth-success', handleGoogleAuthSuccess);
       realtimeSyncService.stopSync();
     };
   }, []);
