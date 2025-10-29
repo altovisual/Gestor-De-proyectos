@@ -88,15 +88,30 @@ function App() {
     
     initializeUser();
 
-    // Iniciar sincronización
-    realtimeSyncService.startSync((updatedTasks) => {
-      console.log('📥 Tareas actualizadas desde Supabase:', updatedTasks.length);
-      setTasks(updatedTasks);
-      setIsRealtimeConnected(true);
+    // Migración automática y sincronización
+    const initializeSync = async () => {
+      // Primero, verificar si hay tareas en localStorage que no estén en Supabase
+      const localTasks = localStorage.getItem('proyectoDayanTasks');
+      if (localTasks) {
+        const tasks = JSON.parse(localTasks);
+        if (tasks.length > 0) {
+          console.log('🔄 Detectadas tareas locales, migrando automáticamente...');
+          await realtimeSyncService.migrateFromLocalStorage();
+        }
+      }
       
-      // También guardar en localStorage como backup
-      localStorage.setItem('proyectoDayanTasks', JSON.stringify(updatedTasks));
-    });
+      // Iniciar sincronización en tiempo real
+      realtimeSyncService.startSync((updatedTasks) => {
+        console.log('📥 Tareas actualizadas desde Supabase:', updatedTasks.length);
+        setTasks(updatedTasks);
+        setIsRealtimeConnected(true);
+        
+        // También guardar en localStorage como backup
+        localStorage.setItem('proyectoDayanTasks', JSON.stringify(updatedTasks));
+      });
+    };
+    
+    initializeSync();
 
     // Limpiar al desmontar
     return () => {
