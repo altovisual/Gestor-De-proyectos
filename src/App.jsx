@@ -65,12 +65,26 @@ function App() {
   useEffect(() => {
     console.log('🚀 Iniciando app con sincronización en tiempo real...');
     
-    // Obtener email del usuario (puedes pedirlo al inicio o usar el de Google)
-    const email = localStorage.getItem('userEmail') || prompt('Ingresa tu email para colaborar:');
-    if (email) {
-      setUserEmail(email);
-      localStorage.setItem('userEmail', email);
-    }
+    // Obtener email del usuario desde Google Auth
+    const initializeUser = async () => {
+      const savedEmail = localStorage.getItem('userEmail');
+      
+      if (savedEmail) {
+        setUserEmail(savedEmail);
+      } else {
+        // Intentar obtener del perfil de Google si está autenticado
+        const { googleAuthService } = await import('./services/googleAuth');
+        if (googleAuthService.isAuthenticated()) {
+          const profile = googleAuthService.getUserProfile();
+          if (profile?.email) {
+            setUserEmail(profile.email);
+            localStorage.setItem('userEmail', profile.email);
+          }
+        }
+      }
+    };
+    
+    initializeUser();
 
     // Iniciar sincronización
     realtimeSyncService.startSync((updatedTasks) => {
@@ -693,7 +707,7 @@ function App() {
               </div>
             </div>
             
-            {/* Chips minimalistas - Responsive */}
+            {/* Chips minimalistas - Responsive con hover animado */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={() => {
@@ -701,15 +715,18 @@ function App() {
                   setShowKPIs(false);
                   setShowIdeas(false);
                 }}
-                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                className={`group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 ${
                   showLaunches 
                     ? 'bg-purple-500 text-white hover:bg-purple-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    : 'bg-gray-100 hover:bg-purple-50 text-gray-700 hover:text-purple-600'
                 }`}
+                title="Lanzamientos"
               >
-                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:rotate-12" />
                 <span className="hidden md:inline">Lanzamientos</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
+                  showLaunches ? 'bg-white text-purple-600' : 'bg-white text-gray-600 group-hover:bg-purple-100 group-hover:text-purple-600'
+                }`}>
                   {launches.length}
                 </span>
               </button>
@@ -720,15 +737,18 @@ function App() {
                   setShowKPIs(false);
                   setShowLaunches(false);
                 }}
-                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                className={`group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 ${
                   showIdeas 
                     ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    : 'bg-gray-100 hover:bg-yellow-50 text-gray-700 hover:text-yellow-600'
                 }`}
+                title="Ideas"
               >
-                <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
                 <span className="hidden md:inline">Ideas</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
+                  showIdeas ? 'bg-white text-yellow-600' : 'bg-white text-gray-600 group-hover:bg-yellow-100 group-hover:text-yellow-600'
+                }`}>
                   {ideas.length}
                 </span>
               </button>
@@ -739,24 +759,28 @@ function App() {
                   setShowLaunches(false);
                   setShowIdeas(false);
                 }}
-                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm ${
+                className={`group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 ${
                   showKPIs 
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    : 'bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600'
                 }`}
+                title="KPIs"
               >
-                <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:translate-y-[-2px]" />
                 <span className="hidden md:inline">KPIs</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
+                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
+                  showKPIs ? 'bg-white text-blue-600' : 'bg-white text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'
+                }`}>
                   {kpis.length}
                 </span>
               </button>
               
               <button
                 onClick={() => setShowPerspectivesManager(true)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm"
+                className="group flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-green-50 text-gray-700 hover:text-green-600 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105"
+                title="Perspectivas"
               >
-                <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:rotate-90" />
                 <span className="hidden md:inline">Perspectivas</span>
                 <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {getAllPerspectives().length}
