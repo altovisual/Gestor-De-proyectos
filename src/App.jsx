@@ -788,7 +788,6 @@ function App() {
                     ? 'bg-purple-500 text-white hover:bg-purple-600' 
                     : 'bg-gray-100 hover:bg-purple-50 text-gray-700 hover:text-purple-600'
                 }`}
-                title="Lanzamientos"
               >
                 <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:rotate-12" />
                 <span className="hidden md:inline">Lanzamientos</span>
@@ -796,6 +795,11 @@ function App() {
                   showLaunches ? 'bg-white text-purple-600' : 'bg-white text-gray-600 group-hover:bg-purple-100 group-hover:text-purple-600'
                 }`}>
                   {launches.length}
+                </span>
+                {/* Tooltip */}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
+                  📅 Lanzamientos
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
                 </span>
               </button>
 
@@ -810,7 +814,6 @@ function App() {
                     ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
                     : 'bg-gray-100 hover:bg-yellow-50 text-gray-700 hover:text-yellow-600'
                 }`}
-                title="Ideas"
               >
                 <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
                 <span className="hidden md:inline">Ideas</span>
@@ -818,6 +821,11 @@ function App() {
                   showIdeas ? 'bg-white text-yellow-600' : 'bg-white text-gray-600 group-hover:bg-yellow-100 group-hover:text-yellow-600'
                 }`}>
                   {ideas.length}
+                </span>
+                {/* Tooltip */}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
+                  💡 Ideas Creativas
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
                 </span>
               </button>
               
@@ -832,7 +840,6 @@ function App() {
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
                     : 'bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600'
                 }`}
-                title="KPIs"
               >
                 <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:translate-y-[-2px]" />
                 <span className="hidden md:inline">KPIs</span>
@@ -841,15 +848,24 @@ function App() {
                 }`}>
                   {kpis.length}
                 </span>
+                {/* Tooltip */}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
+                  📈 Indicadores de Desempeño
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
+                </span>
               </button>
               
               <button
                 onClick={() => setShowPerspectivesManager(true)}
-                className="group flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-green-50 text-gray-700 hover:text-green-600 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105"
-                title="Perspectivas"
+                className="group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-green-50 text-gray-700 hover:text-green-600 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105"
               >
                 <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:rotate-90" />
                 <span className="hidden md:inline">Perspectivas</span>
+                {/* Tooltip */}
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg z-50">
+                  🎯 Gestionar Perspectivas
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
+                </span>
                 <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {getAllPerspectives().length}
                 </span>
