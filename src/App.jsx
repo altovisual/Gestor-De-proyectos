@@ -14,6 +14,7 @@ import LaunchTimeline from './components/LaunchTimeline';
 import SimpleIdeasManager from './components/SimpleIdeasManager';
 import { taskNotificationManager } from './services/taskNotificationManager';
 import { realtimeSyncService } from './services/realtimeSync';
+import { participantsSyncService } from './services/participantsSync';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -119,16 +120,42 @@ function App() {
     };
   }, []);
 
-  // Cargar participantes, perspectivas, KPIs y lanzamientos desde localStorage
+  // Sincronizar participantes en tiempo real
   useEffect(() => {
-    const savedParticipants = localStorage.getItem('proyectoDayanParticipants');
+    const initializeParticipants = async () => {
+      // Migrar participantes de localStorage si existen
+      const localParticipants = localStorage.getItem('proyectoDayanParticipants');
+      if (localParticipants) {
+        const participants = JSON.parse(localParticipants);
+        if (participants.length > 0) {
+          console.log('🔄 Detectados participantes locales, migrando automáticamente...');
+          await participantsSyncService.migrateFromLocalStorage();
+        }
+      }
+      
+      // Iniciar sincronización en tiempo real
+      participantsSyncService.startSync((updatedParticipants) => {
+        console.log('📥 Participantes actualizados desde Supabase:', updatedParticipants.length);
+        setGlobalParticipants(updatedParticipants);
+        
+        // También guardar en localStorage como backup
+        localStorage.setItem('proyectoDayanParticipants', JSON.stringify(updatedParticipants));
+      });
+    };
+    
+    initializeParticipants();
+    
+    // Limpiar al desmontar
+    return () => {
+      participantsSyncService.stopSync();
+    };
+  }, []);
+
+  // Cargar perspectivas, KPIs y lanzamientos desde localStorage
+  useEffect(() => {
     const savedPerspectives = localStorage.getItem('proyectoDayanPerspectives');
     const savedKPIs = localStorage.getItem('proyectoDayanKPIs');
     const savedLaunches = localStorage.getItem('proyectoDayanLaunches');
-    
-    if (savedParticipants) {
-      setGlobalParticipants(JSON.parse(savedParticipants));
-    }
     
     if (savedPerspectives) {
       setCustomPerspectives(JSON.parse(savedPerspectives));
@@ -420,15 +447,36 @@ function App() {
   };
 
   // Gestión de participantes globales
-  const addGlobalParticipant = () => {
-    if (newGlobalParticipant.trim() && !globalParticipants.includes(newGlobalParticipant.trim())) {
-      setGlobalParticipants([...globalParticipants, newGlobalParticipant.trim()]);
-      setNewGlobalParticipant('');
+  const addGlobalParticipant = async () => {
+    const participantName = newGlobalParticipant.trim();
+    if (!participantName) return;
+    
+    // Verificar si ya existe
+    const exists = globalParticipants.some(p => 
+      (p.nombre || p.name || p) === participantName || 
+      (p.email || '') === participantName
+    );
+    
+    if (exists) {
+      console.log('Participante ya existe');
+      return;
     }
+    
+    // Guardar en Supabase (se sincronizará automáticamente)
+    await participantsSyncService.saveParticipant({
+      nombre: participantName,
+      email: participantName.includes('@') ? participantName : `${participantName.toLowerCase().replace(/\s+/g, '.')}@proyecto.com`
+    }, userEmail);
+    
+    setNewGlobalParticipant('');
   };
 
-  const removeGlobalParticipant = (participantName) => {
-    setGlobalParticipants(globalParticipants.filter(p => p !== participantName));
+  const removeGlobalParticipant = async (participant) => {
+    // Obtener el ID del participante
+    const participantId = participant.id || participant;
+    
+    // Eliminar de Supabase (se sincronizará automáticamente)
+    await participantsSyncService.deleteParticipant(participantId);
   };
 
   // CRUD de Perspectivas
