@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb, Wifi, WifiOff } from 'lucide-react';
+import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb, Wifi, WifiOff, Settings } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from './components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card';
@@ -918,8 +918,19 @@ function App() {
           <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
             {/* Logo y Título */}
             <div className="text-center space-y-4">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl inline-block">
-                <Music className="w-12 h-12 text-white" />
+              <div className="inline-block">
+                <img 
+                  src="/mvpx.png" 
+                  alt="Logo MVPX" 
+                  className="w-20 h-20 object-contain mx-auto"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl hidden">
+                  <Music className="w-12 h-12 text-white" />
+                </div>
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Proyecto Dayan</h1>
