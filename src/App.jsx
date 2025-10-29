@@ -12,6 +12,7 @@ import { SmallCardsView, ListView, KanbanView, QuartersView } from './components
 import KPIManager from './components/KPIManager';
 import LaunchTimeline from './components/LaunchTimeline';
 import SimpleIdeasManager from './components/SimpleIdeasManager';
+import { taskNotificationManager } from './services/taskNotificationManager';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -123,6 +124,19 @@ function App() {
     }
   }, [tasks]);
 
+  // Iniciar sistema de recordatorios diarios
+  useEffect(() => {
+    if (tasks.length > 0) {
+      // Iniciar recordatorios diarios
+      taskNotificationManager.startDailyReminders(tasks);
+    }
+
+    // Limpiar al desmontar el componente
+    return () => {
+      taskNotificationManager.stopDailyReminders();
+    };
+  }, [tasks]);
+
   // Guardar participantes en localStorage
   useEffect(() => {
     localStorage.setItem('proyectoDayanParticipants', JSON.stringify(globalParticipants));
@@ -148,10 +162,28 @@ function App() {
     localStorage.setItem('proyectoDayanIdeas', JSON.stringify(ideas));
   }, [ideas]);
 
-  const updateTask = (taskId, updates) => {
+  const updateTask = async (taskId, updates) => {
+    // Guardar progreso anterior si se está actualizando
+    const oldTask = tasks.find(t => t.id === taskId);
+    const oldProgress = oldTask?.progreso || 0;
+    const newProgress = updates.progreso;
+
     setTasks(tasks.map(task => 
       task.id === taskId ? { ...task, ...updates } : task
     ));
+
+    // Si cambió el progreso, enviar notificación
+    if (newProgress !== undefined && newProgress !== oldProgress && oldTask) {
+      try {
+        await taskNotificationManager.notifyProgressUpdate(
+          { ...oldTask, ...updates },
+          oldProgress,
+          newProgress
+        );
+      } catch (error) {
+        console.error('Error enviando notificación de progreso:', error);
+      }
+    }
   };
 
   const toggleSubtask = (taskId, subtaskId) => {
@@ -212,17 +244,36 @@ function App() {
     }
   };
 
-  const addParticipant = (taskId, participantName) => {
+  const addParticipant = async (taskId, participantName) => {
     if (participantName.trim()) {
-      setTasks(tasks.map(task => {
+      let updatedTask = null;
+      const newTasks = tasks.map(task => {
         if (task.id === taskId) {
           const participants = task.participantes || [];
           if (!participants.includes(participantName.trim())) {
-            return { ...task, participantes: [...participants, participantName.trim()] };
+            updatedTask = { ...task, participantes: [...participants, participantName.trim()] };
+            return updatedTask;
           }
         }
         return task;
-      }));
+      });
+      
+      setTasks(newTasks);
+      
+      // Enviar notificación al nuevo participante
+      if (updatedTask) {
+        try {
+          const result = await taskNotificationManager.notifyTaskAssignment(
+            updatedTask,
+            [participantName.trim()]
+          );
+          if (result.success) {
+            console.log('✅ Notificación enviada:', result.message);
+          }
+        } catch (error) {
+          console.error('Error enviando notificación:', error);
+        }
+      }
     }
   };
 
