@@ -43,42 +43,7 @@ class GoogleCalendarService {
   }
 
   /**
-   * Crea un evento de tarea en el calendario
-   */
-  async createTaskEvent(task, participants) {
-    const startDate = new Date(task.fecha_inicio);
-    const endDate = new Date(task.fecha_fin);
-
-    // Crear lista de participantes en la descripción (sin invitarlos como attendees)
-    const participantsList = participants.map(p => p.nombre || p.email).join(', ');
-
-    const event = {
-      summary: `📋 ${task.nombre}`,
-      description: `Tarea del proyecto: ${task.nombre}\n\nDescripción: ${task.descripcion || 'Sin descripción'}\n\nParticipantes: ${participantsList}\n\nProgreso: ${task.progreso}%\n\nEstado: ${task.estado}`,
-      start: {
-        dateTime: startDate.toISOString(),
-        timeZone: 'America/New_York', // Ajusta según tu zona horaria
-      },
-      end: {
-        dateTime: endDate.toISOString(),
-        timeZone: 'America/New_York',
-      },
-      // NO incluir attendees para evitar que Google envíe invitaciones automáticas
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: 'email', minutes: 24 * 60 }, // 1 día antes
-          { method: 'popup', minutes: 60 }, // 1 hora antes
-        ],
-      },
-      colorId: this.getColorByStatus(task.estado),
-    };
-
-    return await this.createEvent(event);
-  }
-
-  /**
-   * Actualiza un evento existente
+   * Actualiza un evento existente en Google Calendar
    */
   async updateEvent(eventId, eventData) {
     const accessToken = googleAuthService.getAccessToken();
@@ -87,8 +52,8 @@ class GoogleCalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/calendars/primary/events/${eventId}`, {
-        method: 'PUT',
+      const response = await fetch(`${this.baseUrl}/calendars/primary/events/${eventId}?sendNotifications=false&sendUpdates=none`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -109,7 +74,7 @@ class GoogleCalendarService {
   }
 
   /**
-   * Elimina un evento del calendario
+   * Elimina un evento de Google Calendar
    */
   async deleteEvent(eventId) {
     const accessToken = googleAuthService.getAccessToken();
@@ -118,14 +83,14 @@ class GoogleCalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/calendars/primary/events/${eventId}`, {
+      const response = await fetch(`${this.baseUrl}/calendars/primary/events/${eventId}?sendNotifications=false&sendUpdates=none`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
         },
       });
 
-      if (!response.ok && response.status !== 204) {
+      if (!response.ok && response.status !== 410) { // 410 = Already deleted
         const error = await response.json();
         throw new Error(error.error?.message || 'Error al eliminar evento');
       }
@@ -138,51 +103,76 @@ class GoogleCalendarService {
   }
 
   /**
-   * Obtiene el color según el estado de la tarea
+   * Crea un evento de tarea en el calendario
    */
-  getColorByStatus(estado) {
-    const colorMap = {
-      'pendiente': '7', // Gris
-      'en-progreso': '9', // Azul
-      'completada': '10', // Verde
-      'bloqueada': '11', // Rojo
+  async createTaskEvent(task, participants = []) {
+    const startDate = new Date(task.fechaInicio || task.fecha_inicio);
+    const endDate = new Date(task.fechaFin || task.fecha_fin);
+
+    // Crear lista de participantes en la descripción (sin invitarlos como attendees)
+    const participantsList = participants.map(p => p.nombre || p.email).join(', ');
+
+    const event = {
+      summary: `📋 ${task.actividad || task.nombre}`,
+      description: `Tarea del proyecto: ${task.actividad || task.nombre}\n\nDescripción: ${task.descripcion || 'Sin descripción'}\n\nParticipantes: ${participantsList}\n\nProgreso: ${task.progreso}%\n\nEstado: ${task.estatus || task.estado}`,
+      start: {
+        dateTime: startDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: endDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      // NO incluir attendees para evitar que Google envíe invitaciones automáticas
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 }, // 1 día antes
+          { method: 'popup', minutes: 60 }, // 1 hora antes
+        ],
+      },
+      colorId: this.getColorByStatus(task.estatus || task.estado),
     };
-    return colorMap[estado] || '7';
+
+    return await this.createEvent(event);
   }
 
   /**
-   * Sincroniza una tarea con Google Calendar
+   * Actualiza un evento de tarea existente
    */
-  async syncTask(task, participants, calendarEventId = null) {
-    try {
-      if (calendarEventId) {
-        // Actualizar evento existente
-        const startDate = new Date(task.fecha_inicio);
-        const endDate = new Date(task.fecha_fin);
+  async updateTaskEvent(eventId, task, participants = []) {
+    const startDate = new Date(task.fechaInicio || task.fecha_inicio);
+    const endDate = new Date(task.fechaFin || task.fecha_fin);
+    const participantsList = participants.map(p => p.nombre || p.email).join(', ');
 
-        const eventData = {
-          summary: task.nombre,
-          description: `Tarea del proyecto: ${task.nombre}\n\nDescripción: ${task.descripcion || 'Sin descripción'}\n\nProgreso: ${task.progreso}%`,
-          start: {
-            dateTime: startDate.toISOString(),
-            timeZone: 'America/New_York',
-          },
-          end: {
-            dateTime: endDate.toISOString(),
-            timeZone: 'America/New_York',
-          },
-          colorId: this.getColorByStatus(task.estado),
-        };
+    const eventData = {
+      summary: `📋 ${task.actividad || task.nombre}`,
+      description: `Tarea del proyecto: ${task.actividad || task.nombre}\n\nDescripción: ${task.descripcion || 'Sin descripción'}\n\nParticipantes: ${participantsList}\n\nProgreso: ${task.progreso}%\n\nEstado: ${task.estatus || task.estado}`,
+      start: {
+        dateTime: startDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: endDate.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      colorId: this.getColorByStatus(task.estatus || task.estado),
+    };
 
-        return await this.updateEvent(calendarEventId, eventData);
-      } else {
-        // Crear nuevo evento
-        return await this.createTaskEvent(task, participants);
-      }
-    } catch (error) {
-      console.error('Error sincronizando tarea con Calendar:', error);
-      throw error;
-    }
+    return await this.updateEvent(eventId, eventData);
+  }
+
+  /**
+   * Obtiene el color del evento según el estado de la tarea
+   */
+  getColorByStatus(status) {
+    const colors = {
+      'pendiente': '7', // Gris
+      'en progreso': '9', // Azul
+      'completada': '10', // Verde
+      'bloqueada': '11', // Rojo
+    };
+    return colors[status?.toLowerCase()] || '7';
   }
 }
 

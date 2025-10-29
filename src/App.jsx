@@ -15,6 +15,7 @@ import SimpleIdeasManager from './components/SimpleIdeasManager';
 import { taskNotificationManager } from './services/taskNotificationManager';
 import { realtimeSyncService } from './services/realtimeSync';
 import { participantsSyncService } from './services/participantsSync';
+import { googleCalendarService } from './services/googleCalendar';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -284,6 +285,21 @@ function App() {
       // Guardar en Supabase (se sincronizará automáticamente)
       await realtimeSyncService.saveTask(task, userEmail);
       
+      // Crear evento en Google Calendar si está autenticado
+      if (isGoogleAuthenticated) {
+        try {
+          const calendarEvent = await googleCalendarService.createTaskEvent(task, globalParticipants);
+          console.log('✅ Evento creado en Google Calendar:', calendarEvent.htmlLink);
+          
+          // Guardar el ID del evento en la tarea para futuras actualizaciones
+          task.calendar_event_id = calendarEvent.id;
+          await realtimeSyncService.saveTask(task, userEmail);
+        } catch (error) {
+          console.error('Error creando evento en Calendar:', error);
+          // No bloquear la creación de la tarea si falla Calendar
+        }
+      }
+      
       setNewTask({
         perspectiva: '',
         actividad: '',
@@ -300,8 +316,22 @@ function App() {
 
   const deleteTask = async (taskId) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+      // Buscar la tarea para obtener el calendar_event_id
+      const task = tasks.find(t => t.id === taskId);
+      
       // Eliminar de Supabase (se sincronizará automáticamente)
       await realtimeSyncService.deleteTask(taskId);
+      
+      // Eliminar evento de Google Calendar si está autenticado y existe el evento
+      if (isGoogleAuthenticated && task?.calendar_event_id) {
+        try {
+          await googleCalendarService.deleteEvent(task.calendar_event_id);
+          console.log('✅ Evento eliminado de Google Calendar');
+        } catch (error) {
+          console.error('Error eliminando evento de Calendar:', error);
+          // No bloquear la eliminación de la tarea si falla Calendar
+        }
+      }
     }
   };
 
@@ -312,12 +342,29 @@ function App() {
 
   const saveEditedTask = async () => {
     if (editingTask) {
-      // Guardar en Supabase (se sincronizará automáticamente)
-      await realtimeSyncService.saveTask({
+      const taskToSave = {
         ...editingTask,
         fecha_inicio: editingTask.fechaInicio,
         fecha_fin: editingTask.fechaFin
-      }, userEmail);
+      };
+      
+      // Guardar en Supabase (se sincronizará automáticamente)
+      await realtimeSyncService.saveTask(taskToSave, userEmail);
+      
+      // Actualizar evento en Google Calendar si está autenticado y existe el evento
+      if (isGoogleAuthenticated && editingTask.calendar_event_id) {
+        try {
+          await googleCalendarService.updateTaskEvent(
+            editingTask.calendar_event_id,
+            taskToSave,
+            globalParticipants
+          );
+          console.log('✅ Evento actualizado en Google Calendar');
+        } catch (error) {
+          console.error('Error actualizando evento en Calendar:', error);
+          // No bloquear la actualización de la tarea si falla Calendar
+        }
+      }
       
       setShowEditModal(false);
       setEditingTask(null);
@@ -775,7 +822,7 @@ function App() {
               </div>
             </div>
             
-            {/* Chips minimalistas - Responsive con hover animado */}
+            {/* Chips minimalistas - Responsive */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={() => {
@@ -783,23 +830,16 @@ function App() {
                   setShowKPIs(false);
                   setShowIdeas(false);
                 }}
-                className={`group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   showLaunches 
                     ? 'bg-purple-500 text-white hover:bg-purple-600' 
-                    : 'bg-gray-100 hover:bg-purple-50 text-gray-700 hover:text-purple-600'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
-                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:rotate-12" />
+                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 <span className="hidden md:inline">Lanzamientos</span>
-                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
-                  showLaunches ? 'bg-white text-purple-600' : 'bg-white text-gray-600 group-hover:bg-purple-100 group-hover:text-purple-600'
-                }`}>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {launches.length}
-                </span>
-                {/* Tooltip */}
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
-                  📅 Lanzamientos
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
                 </span>
               </button>
 
@@ -809,23 +849,16 @@ function App() {
                   setShowKPIs(false);
                   setShowLaunches(false);
                 }}
-                className={`group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   showIdeas 
                     ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
-                    : 'bg-gray-100 hover:bg-yellow-50 text-gray-700 hover:text-yellow-600'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
-                <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+                <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 <span className="hidden md:inline">Ideas</span>
-                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
-                  showIdeas ? 'bg-white text-yellow-600' : 'bg-white text-gray-600 group-hover:bg-yellow-100 group-hover:text-yellow-600'
-                }`}>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {ideas.length}
-                </span>
-                {/* Tooltip */}
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
-                  💡 Ideas Creativas
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
                 </span>
               </button>
               
@@ -835,37 +868,25 @@ function App() {
                   setShowLaunches(false);
                   setShowIdeas(false);
                 }}
-                className={`group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                   showKPIs 
                     ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-blue-600'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                 }`}
               >
-                <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:translate-y-[-2px]" />
+                <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 <span className="hidden md:inline">KPIs</span>
-                <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs font-semibold transition-colors duration-300 ${
-                  showKPIs ? 'bg-white text-blue-600' : 'bg-white text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600'
-                }`}>
+                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {kpis.length}
-                </span>
-                {/* Tooltip */}
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg">
-                  📈 Indicadores de Desempeño
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
                 </span>
               </button>
               
               <button
                 onClick={() => setShowPerspectivesManager(true)}
-                className="group relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-green-50 text-gray-700 hover:text-green-600 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-colors"
               >
-                <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5 transition-transform duration-300 group-hover:rotate-90" />
+                <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 <span className="hidden md:inline">Perspectivas</span>
-                {/* Tooltip */}
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-lg z-50">
-                  🎯 Gestionar Perspectivas
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></span>
-                </span>
                 <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
                   {getAllPerspectives().length}
                 </span>
