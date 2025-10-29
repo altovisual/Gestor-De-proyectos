@@ -60,6 +60,7 @@ function App() {
   const [showIdeas, setShowIdeas] = useState(false);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
 
   // Iniciar sincronización en tiempo real
   useEffect(() => {
@@ -67,20 +68,21 @@ function App() {
     
     // Obtener email del usuario desde Google Auth
     const initializeUser = async () => {
-      const savedEmail = localStorage.getItem('userEmail');
+      // Intentar obtener del perfil de Google si está autenticado
+      const { googleAuthService } = await import('./services/googleAuth');
+      const isAuth = googleAuthService.isAuthenticated();
+      setIsGoogleAuthenticated(isAuth);
       
-      if (savedEmail) {
-        setUserEmail(savedEmail);
-      } else {
-        // Intentar obtener del perfil de Google si está autenticado
-        const { googleAuthService } = await import('./services/googleAuth');
-        if (googleAuthService.isAuthenticated()) {
-          const profile = googleAuthService.getUserProfile();
-          if (profile?.email) {
-            setUserEmail(profile.email);
-            localStorage.setItem('userEmail', profile.email);
-          }
+      if (isAuth) {
+        const profile = googleAuthService.getUserProfile();
+        if (profile?.email) {
+          setUserEmail(profile.email);
+          localStorage.setItem('userEmail', profile.email);
         }
+      } else {
+        // Si no está autenticado, limpiar el email
+        setUserEmail('');
+        localStorage.removeItem('userEmail');
       }
     };
     
@@ -690,8 +692,8 @@ function App() {
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate flex items-center gap-2">
                   Proyecto Dayan
-                  {/* Indicador de conexión en tiempo real */}
-                  {isRealtimeConnected ? (
+                  {/* Indicador de conexión - Solo muestra "En vivo" si está autenticado con Google */}
+                  {isGoogleAuthenticated && isRealtimeConnected ? (
                     <span className="flex items-center gap-1 text-xs text-green-600 font-normal">
                       <Wifi className="w-3 h-3" />
                       <span className="hidden sm:inline">En vivo</span>
@@ -703,7 +705,10 @@ function App() {
                     </span>
                   )}
                 </h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Cronograma Musical {userEmail && `• ${userEmail}`}</p>
+                <p className="text-xs text-gray-500 hidden sm:block">
+                  Cronograma Musical
+                  {isGoogleAuthenticated && userEmail ? ` • ${userEmail}` : ''}
+                </p>
               </div>
             </div>
             
