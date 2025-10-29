@@ -233,20 +233,37 @@ function App() {
   }, [ideas]);
 
   const updateTask = async (taskId, updates) => {
-    // Guardar progreso anterior si se está actualizando
+    // Guardar datos anteriores si se están actualizando
     const oldTask = tasks.find(t => t.id === taskId);
     const oldProgress = oldTask?.progreso || 0;
+    const oldStatus = oldTask?.estatus || 'pendiente';
     const newProgress = updates.progreso;
+    const newStatus = updates.estatus;
 
+    // Actualizar tarea localmente
+    const updatedTask = { ...oldTask, ...updates };
     setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, ...updates } : task
+      task.id === taskId ? updatedTask : task
     ));
 
+    // Guardar en Supabase en tiempo real
+    await realtimeSyncService.saveTask(updatedTask, userEmail);
+
+    // Obtener participantes con emails
+    const taskParticipants = updatedTask.participantes || [];
+    const participantsWithEmails = taskParticipants.map(participantName => {
+      const globalParticipant = globalParticipants.find(gp => {
+        const gpName = typeof gp === 'string' ? gp : (gp.nombre || gp.name || '');
+        return gpName === participantName;
+      });
+      return globalParticipant || { nombre: participantName, email: null };
+    }).filter(p => p.email); // Solo participantes con email válido
+
     // Si cambió el progreso, enviar notificación
-    if (newProgress !== undefined && newProgress !== oldProgress && oldTask) {
+    if (newProgress !== undefined && newProgress !== oldProgress && oldTask && participantsWithEmails.length > 0) {
       try {
         await taskNotificationManager.notifyProgressUpdate(
-          { ...oldTask, ...updates },
+          updatedTask,
           oldProgress,
           newProgress
         );
@@ -254,21 +271,87 @@ function App() {
         console.error('Error enviando notificación de progreso:', error);
       }
     }
+
+    // Si cambió el estado, enviar notificación
+    if (newStatus !== undefined && newStatus !== oldStatus && oldTask && participantsWithEmails.length > 0) {
+      try {
+        await taskNotificationManager.notifyStatusChange(
+          updatedTask,
+          oldStatus,
+          newStatus
+        );
+      } catch (error) {
+        console.error('Error enviando notificación de estado:', error);
+      }
+    }
   };
 
-  const toggleSubtask = (taskId, subtaskId) => {
-    setTasks(tasks.map(task => {
-      if (task.id === taskId) {
-        const updatedSubtasks = task.subtareas.map(st =>
-          st.id === subtaskId ? { ...st, completada: !st.completada } : st
-        );
-        const completedCount = updatedSubtasks.filter(st => st.completada).length;
-        const newStatus = completedCount === updatedSubtasks.length ? 'completado' :
-                         completedCount > 0 ? 'en-progreso' : 'pendiente';
-        return { ...task, subtareas: updatedSubtasks, estatus: newStatus };
+  const toggleSubtask = async (taskId, subtaskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const oldProgress = task.progreso || 0;
+    const oldStatus = task.estatus || 'pendiente';
+
+    // Actualizar subtareas
+    const updatedSubtasks = task.subtareas.map(st =>
+      st.id === subtaskId ? { ...st, completada: !st.completada } : st
+    );
+    
+    // Calcular nuevo progreso basado en subtareas completadas
+    const completedCount = updatedSubtasks.filter(st => st.completada).length;
+    const totalSubtasks = updatedSubtasks.length;
+    const newProgress = totalSubtasks > 0 ? Math.round((completedCount / totalSubtasks) * 100) : 0;
+    
+    // Calcular nuevo estado
+    const newStatus = completedCount === totalSubtasks ? 'completado' :
+                     completedCount > 0 ? 'en-progreso' : 'pendiente';
+
+    // Crear tarea actualizada
+    const updatedTask = { 
+      ...task, 
+      subtareas: updatedSubtasks, 
+      estatus: newStatus,
+      progreso: newProgress
+    };
+
+    // Actualizar estado local
+    setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+
+    // Guardar en Supabase automáticamente
+    await realtimeSyncService.saveTask(updatedTask, userEmail);
+
+    // Obtener participantes con emails para notificaciones
+    const taskParticipants = updatedTask.participantes || [];
+    const participantsWithEmails = taskParticipants.map(participantName => {
+      const globalParticipant = globalParticipants.find(gp => {
+        const gpName = typeof gp === 'string' ? gp : (gp.nombre || gp.name || '');
+        return gpName === participantName;
+      });
+      return globalParticipant || { nombre: participantName, email: null };
+    }).filter(p => p.email);
+
+    // Enviar notificaciones si cambió el progreso o estado
+    if (participantsWithEmails.length > 0 && isGoogleAuthenticated) {
+      try {
+        if (newProgress !== oldProgress) {
+          await taskNotificationManager.notifyProgressUpdate(
+            updatedTask,
+            oldProgress,
+            newProgress
+          );
+        }
+        if (newStatus !== oldStatus) {
+          await taskNotificationManager.notifyStatusChange(
+            updatedTask,
+            oldStatus,
+            newStatus
+          );
+        }
+      } catch (error) {
+        console.error('Error enviando notificaciones:', error);
       }
-      return task;
-    }));
+    }
   };
 
   const addNewTask = async () => {
@@ -1604,7 +1687,21 @@ function App() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Editar Tarea</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-gray-900">Editar Tarea</h2>
+                {editingTask?.calendar_event_id && (
+                  <a
+                    href={`https://calendar.google.com/calendar/event?eid=${btoa(editingTask.calendar_event_id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors"
+                    title="Ver en Google Calendar"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span className="hidden sm:inline">Ver en Calendar</span>
+                  </a>
+                )}
+              </div>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="text-gray-400 hover:text-gray-600"

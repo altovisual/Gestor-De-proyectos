@@ -361,7 +361,7 @@ class EmailNotificationService {
     <div class="header">
       <h1>✅ Progreso Actualizado</h1>
     </div>
-    <p>Hola <strong>${participant.nombre}</strong>,</p>
+    <p>Hola <strong>${participant.nombre || participant.email.split('@')[0]}</strong>,</p>
     <p>El progreso de tu tarea ha sido actualizado:</p>
     <div class="progress-update">
       <p><strong>Tarea:</strong> ${task.nombre}</p>
@@ -377,6 +377,60 @@ class EmailNotificationService {
       return await this.sendEmail(participant.email, subject, htmlContent);
     } catch (error) {
       console.error('Error enviando notificación de actualización:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Envía notificación de cambio de estado
+   */
+  async sendStatusChangeNotification(task, participant, oldStatus, newStatus) {
+    try {
+      const subject = `🔄 Estado actualizado: ${task.nombre}`;
+      
+      const statusEmojis = {
+        'pendiente': '⏳',
+        'en progreso': '🔄',
+        'completada': '✅',
+        'bloqueada': '🚫'
+      };
+      
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .container { background-color: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; }
+    h1 { color: #2563eb; margin: 0; font-size: 24px; }
+    .status-update { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-weight: bold; margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔄 Estado Actualizado</h1>
+    </div>
+    <p>Hola <strong>${participant.nombre || participant.email.split('@')[0]}</strong>,</p>
+    <p>El estado de tu tarea ha cambiado:</p>
+    <div class="status-update">
+      <p><strong>Tarea:</strong> ${task.nombre}</p>
+      <p><strong>Estado anterior:</strong> ${statusEmojis[oldStatus] || ''} ${oldStatus}</p>
+      <p><strong>Estado actual:</strong> ${statusEmojis[newStatus] || ''} ${newStatus}</p>
+      <p><strong>Progreso:</strong> ${task.progreso}%</p>
+    </div>
+    <p>Mantente al tanto de tus tareas. 📊</p>
+  </div>
+</body>
+</html>
+      `;
+      
+      return await this.sendEmail(participant.email, subject, htmlContent);
+    } catch (error) {
+      console.error('Error enviando notificación de cambio de estado:', error);
       throw error;
     }
   }

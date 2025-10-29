@@ -94,6 +94,31 @@ class TaskNotificationManager {
   }
 
   /**
+   * Notifica cuando cambia el estado de una tarea
+   */
+  async notifyStatusChange(task, oldStatus, newStatus) {
+    if (!googleAuthService.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const formattedTask = this.formatTask(task);
+      const formattedParticipants = this.formatParticipants(task.participantes);
+
+      for (const participant of formattedParticipants) {
+        await emailNotificationService.sendStatusChangeNotification(
+          formattedTask,
+          participant,
+          oldStatus,
+          newStatus
+        );
+      }
+    } catch (error) {
+      console.error('Error en notifyStatusChange:', error);
+    }
+  }
+
+  /**
    * Inicia el sistema de recordatorios diarios
    */
   startDailyReminders(tasks) {
