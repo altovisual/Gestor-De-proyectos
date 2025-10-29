@@ -20,7 +20,8 @@ class GoogleCalendarService {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/calendars/primary/events`, {
+      // Agregar parámetro para NO enviar notificaciones automáticas de Google
+      const response = await fetch(`${this.baseUrl}/calendars/primary/events?sendNotifications=false&sendUpdates=none`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -48,16 +49,12 @@ class GoogleCalendarService {
     const startDate = new Date(task.fecha_inicio);
     const endDate = new Date(task.fecha_fin);
 
-    // Crear lista de asistentes
-    const attendees = participants.map(participant => ({
-      email: participant.email,
-      displayName: participant.nombre,
-      responseStatus: 'needsAction'
-    }));
+    // Crear lista de participantes en la descripción (sin invitarlos como attendees)
+    const participantsList = participants.map(p => p.nombre || p.email).join(', ');
 
     const event = {
-      summary: task.nombre,
-      description: `Tarea del proyecto: ${task.nombre}\n\nDescripción: ${task.descripcion || 'Sin descripción'}\n\nProgreso: ${task.progreso}%`,
+      summary: `📋 ${task.nombre}`,
+      description: `Tarea del proyecto: ${task.nombre}\n\nDescripción: ${task.descripcion || 'Sin descripción'}\n\nParticipantes: ${participantsList}\n\nProgreso: ${task.progreso}%\n\nEstado: ${task.estado}`,
       start: {
         dateTime: startDate.toISOString(),
         timeZone: 'America/New_York', // Ajusta según tu zona horaria
@@ -66,7 +63,7 @@ class GoogleCalendarService {
         dateTime: endDate.toISOString(),
         timeZone: 'America/New_York',
       },
-      attendees: attendees,
+      // NO incluir attendees para evitar que Google envíe invitaciones automáticas
       reminders: {
         useDefault: false,
         overrides: [
