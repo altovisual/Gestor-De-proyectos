@@ -20,6 +20,17 @@ export function AppWithGoogleIntegration({ children }) {
     if (token) {
       setProgressToken(token);
     }
+
+    // Escuchar evento para abrir configuración de Google
+    const handleOpenGoogleSettings = () => {
+      setShowGoogleSettings(true);
+    };
+
+    window.addEventListener('open-google-settings', handleOpenGoogleSettings);
+
+    return () => {
+      window.removeEventListener('open-google-settings', handleOpenGoogleSettings);
+    };
   }, []);
 
   const handleTokenComplete = (result) => {

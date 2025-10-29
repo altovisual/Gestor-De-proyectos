@@ -909,6 +909,91 @@ function App() {
     );
   };
 
+  // Si no está autenticado, mostrar pantalla de login
+  if (!isGoogleAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          {/* Card de Login */}
+          <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+            {/* Logo y Título */}
+            <div className="text-center space-y-4">
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl inline-block">
+                <Music className="w-12 h-12 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Proyecto Dayan</h1>
+                <p className="text-gray-600 mt-2">Cronograma Musical</p>
+              </div>
+            </div>
+
+            {/* Mensaje */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
+                  <Settings className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">
+                    Autenticación Requerida
+                  </h3>
+                  <p className="text-sm text-blue-800">
+                    Debes iniciar sesión con tu cuenta de Google para acceder al sistema de gestión de cronogramas.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Botón de Login */}
+            <button
+              onClick={() => {
+                // Importar y abrir el modal de Google Integration
+                const event = new CustomEvent('open-google-settings');
+                window.dispatchEvent(event);
+              }}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+            >
+              <Settings className="w-5 h-5" />
+              Iniciar Sesión con Google
+            </button>
+
+            {/* Características */}
+            <div className="pt-4 border-t border-gray-200">
+              <p className="text-sm font-semibold text-gray-700 mb-3">
+                ¿Qué puedes hacer?
+              </p>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  Gestionar tareas y cronogramas
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                  Sincronizar con Google Calendar
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  Recibir notificaciones por email
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                  Colaborar en tiempo real
+                </li>
+              </ul>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center pt-4">
+              <p className="text-xs text-gray-500">
+                🔒 Tus datos están protegidos y seguros
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header minimalista estilo iOS - Responsive */}
