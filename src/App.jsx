@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb } from 'lucide-react';
+import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb, Wifi, WifiOff } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from './components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card';
@@ -13,6 +13,7 @@ import KPIManager from './components/KPIManager';
 import LaunchTimeline from './components/LaunchTimeline';
 import SimpleIdeasManager from './components/SimpleIdeasManager';
 import { taskNotificationManager } from './services/taskNotificationManager';
+import { realtimeSyncService } from './services/realtimeSync';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -57,43 +58,42 @@ function App() {
   const [showLaunches, setShowLaunches] = useState(false);
   const [ideas, setIdeas] = useState([]);
   const [showIdeas, setShowIdeas] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
-  // Cargar tareas, participantes, perspectivas, KPIs y lanzamientos desde localStorage
+  // Iniciar sincronización en tiempo real
   useEffect(() => {
-    const savedTasks = localStorage.getItem('proyectoDayanTasks');
+    console.log('🚀 Iniciando app con sincronización en tiempo real...');
+    
+    // Obtener email del usuario (puedes pedirlo al inicio o usar el de Google)
+    const email = localStorage.getItem('userEmail') || prompt('Ingresa tu email para colaborar:');
+    if (email) {
+      setUserEmail(email);
+      localStorage.setItem('userEmail', email);
+    }
+
+    // Iniciar sincronización
+    realtimeSyncService.startSync((updatedTasks) => {
+      console.log('📥 Tareas actualizadas desde Supabase:', updatedTasks.length);
+      setTasks(updatedTasks);
+      setIsRealtimeConnected(true);
+      
+      // También guardar en localStorage como backup
+      localStorage.setItem('proyectoDayanTasks', JSON.stringify(updatedTasks));
+    });
+
+    // Limpiar al desmontar
+    return () => {
+      realtimeSyncService.stopSync();
+    };
+  }, []);
+
+  // Cargar participantes, perspectivas, KPIs y lanzamientos desde localStorage
+  useEffect(() => {
     const savedParticipants = localStorage.getItem('proyectoDayanParticipants');
     const savedPerspectives = localStorage.getItem('proyectoDayanPerspectives');
     const savedKPIs = localStorage.getItem('proyectoDayanKPIs');
     const savedLaunches = localStorage.getItem('proyectoDayanLaunches');
-    
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    } else {
-      // Inicializar con tareas de ejemplo desde projectData
-      const initialTasks = [];
-      projectData.perspectivas.forEach(perspectiva => {
-        perspectiva.actividades.forEach(actividad => {
-          initialTasks.push({
-            id: `${perspectiva.id}-${actividad.id}`,
-            perspectiva: perspectiva.nombre,
-            actividad: actividad.nombre,
-            descripcion: '',
-            responsable: '',
-            participantes: [],
-            fechaInicio: '',
-            fechaFin: '',
-            estatus: 'pendiente',
-            prioridad: 'media',
-            subtareas: actividad.subtareas.map((st, index) => ({
-              id: `${perspectiva.id}-${actividad.id}-${index}`,
-              nombre: st,
-              completada: false
-            }))
-          });
-        });
-      });
-      setTasks(initialTasks);
-    }
     
     if (savedParticipants) {
       setGlobalParticipants(JSON.parse(savedParticipants));
@@ -117,12 +117,7 @@ function App() {
     }
   }, []);
 
-  // Guardar tareas en localStorage
-  useEffect(() => {
-    if (tasks.length > 0) {
-      localStorage.setItem('proyectoDayanTasks', JSON.stringify(tasks));
-    }
-  }, [tasks]);
+  // Las tareas ya no se guardan en localStorage, se sincronizan automáticamente con Supabase
 
   // Iniciar sistema de recordatorios diarios
   useEffect(() => {
@@ -217,14 +212,20 @@ function App() {
     }));
   };
 
-  const addNewTask = () => {
+  const addNewTask = async () => {
     if (newTask.perspectiva && newTask.actividad) {
       const task = {
         id: `custom-${Date.now()}`,
         ...newTask,
-        subtareas: []
+        subtareas: [],
+        progreso: 0,
+        fecha_inicio: newTask.fechaInicio,
+        fecha_fin: newTask.fechaFin
       };
-      setTasks([...tasks, task]);
+      
+      // Guardar en Supabase (se sincronizará automáticamente)
+      await realtimeSyncService.saveTask(task, userEmail);
+      
       setNewTask({
         perspectiva: '',
         actividad: '',
@@ -239,9 +240,10 @@ function App() {
     }
   };
 
-  const deleteTask = (taskId) => {
+  const deleteTask = async (taskId) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
-      setTasks(tasks.filter(task => task.id !== taskId));
+      // Eliminar de Supabase (se sincronizará automáticamente)
+      await realtimeSyncService.deleteTask(taskId);
     }
   };
 
@@ -250,11 +252,15 @@ function App() {
     setShowEditModal(true);
   };
 
-  const saveEditedTask = () => {
+  const saveEditedTask = async () => {
     if (editingTask) {
-      setTasks(tasks.map(task => 
-        task.id === editingTask.id ? editingTask : task
-      ));
+      // Guardar en Supabase (se sincronizará automáticamente)
+      await realtimeSyncService.saveTask({
+        ...editingTask,
+        fecha_inicio: editingTask.fechaInicio,
+        fecha_fin: editingTask.fechaFin
+      }, userEmail);
+      
       setShowEditModal(false);
       setEditingTask(null);
     }
@@ -668,10 +674,22 @@ function App() {
                 </div>
               </div>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
+                <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate flex items-center gap-2">
                   Proyecto Dayan
+                  {/* Indicador de conexión en tiempo real */}
+                  {isRealtimeConnected ? (
+                    <span className="flex items-center gap-1 text-xs text-green-600 font-normal">
+                      <Wifi className="w-3 h-3" />
+                      <span className="hidden sm:inline">En vivo</span>
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-gray-400 font-normal">
+                      <WifiOff className="w-3 h-3" />
+                      <span className="hidden sm:inline">Offline</span>
+                    </span>
+                  )}
                 </h1>
-                <p className="text-xs text-gray-500 hidden sm:block">Cronograma Musical</p>
+                <p className="text-xs text-gray-500 hidden sm:block">Cronograma Musical {userEmail && `• ${userEmail}`}</p>
               </div>
             </div>
             

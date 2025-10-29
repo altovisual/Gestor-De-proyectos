@@ -318,15 +318,21 @@ class EmailNotificationService {
   async sendTaskNotifications(task, participants) {
     const results = [];
     
+    console.log('📨 Enviando notificaciones a:', participants.map(p => p.email));
+    
     for (const participant of participants) {
       try {
+        console.log(`📧 Enviando email a: ${participant.email}`);
         const result = await this.sendTaskNotification(task, participant);
+        console.log(`✅ Email enviado exitosamente a: ${participant.email}`, result);
         results.push({ participant: participant.email, success: true, result });
       } catch (error) {
+        console.error(`❌ Error enviando email a ${participant.email}:`, error);
         results.push({ participant: participant.email, success: false, error: error.message });
       }
     }
     
+    console.log('📊 Resumen de envíos:', results);
     return results;
   }
 
