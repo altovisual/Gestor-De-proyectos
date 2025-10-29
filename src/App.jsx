@@ -1735,25 +1735,38 @@ function App() {
                     {/* Dropdown de sugerencias */}
                     {showSuggestions && filteredSuggestions.length > 0 && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
-                        {filteredSuggestions.map((suggestion, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={async () => {
-                              await addParticipantToEditingTask(suggestion);
-                              setNewParticipant('');
-                              setShowSuggestions(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl"
-                          >
-                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                              <span className="text-blue-600 font-semibold text-xs">
-                                {suggestion.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                              </span>
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">{suggestion}</span>
-                          </button>
-                        ))}
+                        {filteredSuggestions.map((suggestion, idx) => {
+                          const suggestionName = suggestion.nombre || suggestion.name || suggestion;
+                          const suggestionEmail = suggestion.email || '';
+                          const initials = typeof suggestionName === 'string'
+                            ? suggestionName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                            : 'P';
+                          
+                          return (
+                            <button
+                              key={suggestion.id || idx}
+                              type="button"
+                              onClick={async () => {
+                                await addParticipantToEditingTask(suggestionName);
+                                setNewParticipant('');
+                                setShowSuggestions(false);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-center gap-3 first:rounded-t-xl last:rounded-b-xl"
+                            >
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <span className="text-blue-600 font-semibold text-xs">
+                                  {initials}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium text-gray-900 block">{suggestionName}</span>
+                                {suggestionEmail && (
+                                  <span className="text-xs text-gray-500">{suggestionEmail}</span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -2176,29 +2189,43 @@ function App() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {globalParticipants.map((participant, idx) => (
-                      <div 
-                        key={idx}
-                        className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <span className="text-blue-600 font-semibold text-sm">
-                              {participant.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </span>
-                          </div>
-                          <span className="font-medium text-gray-900">{participant}</span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeGlobalParticipant(participant)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                    {globalParticipants.map((participant, idx) => {
+                      // Normalizar participante (puede ser string u objeto)
+                      const participantName = participant.nombre || participant.name || participant;
+                      const participantEmail = participant.email || '';
+                      const initials = typeof participantName === 'string' 
+                        ? participantName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                        : 'P';
+                      
+                      return (
+                        <div 
+                          key={participant.id || idx}
+                          className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <span className="text-blue-600 font-semibold text-sm">
+                                {initials}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-900 block">{participantName}</span>
+                              {participantEmail && (
+                                <span className="text-xs text-gray-500">{participantEmail}</span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeGlobalParticipant(participant)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
