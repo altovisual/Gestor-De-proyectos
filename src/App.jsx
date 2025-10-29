@@ -1488,15 +1488,21 @@ function App() {
                       <h4 className="text-sm font-semibold text-gray-700">Participantes</h4>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {task.participantes.map((participant, idx) => (
-                        <Chip 
-                          key={idx} 
-                          variant="default"
-                          onRemove={() => removeParticipant(task.id, participant)}
-                        >
-                          {participant}
-                        </Chip>
-                      ))}
+                      {task.participantes.map((participant, idx) => {
+                        const participantName = typeof participant === 'string' 
+                          ? participant 
+                          : (participant.nombre || participant.name || participant.email || 'Participante');
+                        
+                        return (
+                          <Chip 
+                            key={idx} 
+                            variant="default"
+                            onRemove={() => removeParticipant(task.id, participant)}
+                          >
+                            {participantName}
+                          </Chip>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1825,20 +1831,26 @@ function App() {
 
                 {editingTask.participantes && editingTask.participantes.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {editingTask.participantes.map((participant, idx) => (
-                      <Chip 
-                        key={idx} 
-                        variant="default"
-                        onRemove={() => {
-                          setEditingTask({
-                            ...editingTask,
-                            participantes: editingTask.participantes.filter(p => p !== participant)
-                          });
-                        }}
-                      >
-                        {participant}
-                      </Chip>
-                    ))}
+                    {editingTask.participantes.map((participant, idx) => {
+                      const participantName = typeof participant === 'string' 
+                        ? participant 
+                        : (participant.nombre || participant.name || participant.email || 'Participante');
+                      
+                      return (
+                        <Chip 
+                          key={idx} 
+                          variant="default"
+                          onRemove={() => {
+                            setEditingTask({
+                              ...editingTask,
+                              participantes: editingTask.participantes.filter(p => p !== participant)
+                            });
+                          }}
+                        >
+                          {participantName}
+                        </Chip>
+                      );
+                    })}
                   </div>
                 )}
                 

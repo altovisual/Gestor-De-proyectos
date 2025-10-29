@@ -117,6 +117,37 @@ class GoogleAuthService {
   }
 
   /**
+   * Obtiene el perfil del usuario autenticado
+   */
+  async getUserProfile() {
+    if (!this.isAuthenticated()) {
+      return null;
+    }
+
+    try {
+      const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error obteniendo perfil de usuario');
+      }
+
+      const profile = await response.json();
+      // Guardar email en localStorage
+      if (profile.email) {
+        localStorage.setItem('google_user_email', profile.email);
+      }
+      return profile;
+    } catch (error) {
+      console.error('Error obteniendo perfil:', error);
+      return null;
+    }
+  }
+
+  /**
    * Cierra la sesión y limpia los tokens
    */
   signOut() {
@@ -125,6 +156,7 @@ class GoogleAuthService {
     this.expiresAt = null;
     localStorage.removeItem('google_access_token');
     localStorage.removeItem('google_token_expires_at');
+    localStorage.removeItem('google_user_email');
   }
 }
 
