@@ -78,8 +78,27 @@ class RealtimeSyncService {
         return null;
       }
 
-      console.log(`📥 ${data.length} tareas cargadas desde Supabase`);
-      return data;
+      // Normalizar formato para que funcione con la app (snake_case a camelCase)
+      const normalizedTasks = data.map(task => ({
+        id: task.id,
+        actividad: task.actividad,
+        descripcion: task.descripcion,
+        fechaInicio: task.fecha_inicio,
+        fechaFin: task.fecha_fin,
+        responsable: task.responsable,
+        participantes: task.participantes || [],
+        estatus: task.estatus,
+        progreso: task.progreso || 0,
+        prioridad: task.prioridad || 'media',
+        subtareas: task.subtareas || [],
+        perspectiva: task.perspectiva,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        updated_by: task.updated_by
+      }));
+
+      console.log(`📥 ${normalizedTasks.length} tareas cargadas desde Supabase`);
+      return normalizedTasks;
     } catch (error) {
       console.error('Error en loadTasks:', error);
       return null;
@@ -91,11 +110,25 @@ class RealtimeSyncService {
    */
   async saveTask(task, userEmail = 'unknown') {
     try {
+      // Normalizar el formato de la tarea (convertir camelCase a snake_case)
       const taskData = {
-        ...task,
+        id: task.id,
+        actividad: task.actividad || task.nombre || 'Sin título',
+        descripcion: task.descripcion || '',
+        fecha_inicio: task.fecha_inicio || task.fechaInicio || new Date().toISOString(),
+        fecha_fin: task.fecha_fin || task.fechaFin || new Date().toISOString(),
+        responsable: task.responsable || '',
+        participantes: task.participantes || [],
+        estatus: task.estatus || task.estado || 'pendiente',
+        progreso: task.progreso || 0,
+        prioridad: task.prioridad || 'media',
+        subtareas: task.subtareas || [],
+        perspectiva: task.perspectiva || '',
         updated_by: userEmail,
         updated_at: new Date().toISOString()
       };
+
+      console.log('💾 Guardando tarea en Supabase:', taskData.id);
 
       // Verificar si la tarea ya existe
       const { data: existing } = await supabase
@@ -123,14 +156,14 @@ class RealtimeSyncService {
       }
 
       if (result.error) {
-        console.error('Error guardando tarea:', result.error);
+        console.error('❌ Error guardando tarea:', result.error);
         return { success: false, error: result.error };
       }
 
-      console.log('✅ Tarea guardada:', result.data.id);
+      console.log('✅ Tarea guardada en Supabase:', result.data.id);
       return { success: true, data: result.data };
     } catch (error) {
-      console.error('Error en saveTask:', error);
+      console.error('❌ Error en saveTask:', error);
       return { success: false, error };
     }
   }

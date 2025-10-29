@@ -4,14 +4,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Mail, CheckCircle, XCircle, Settings, LogOut } from 'lucide-react';
+import { Calendar, Mail, CheckCircle, XCircle, Settings, LogOut, Database } from 'lucide-react';
 import { googleAuthService } from '../services/googleAuth';
 import { googleCalendarService } from '../services/googleCalendar';
 import { emailNotificationService } from '../services/emailNotifications';
+import { realtimeSyncService } from '../services/realtimeSync';
 
 export function GoogleIntegration({ onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -54,6 +56,39 @@ export function GoogleIntegration({ onClose }) {
       type: 'info',
       text: 'Sesión cerrada correctamente.'
     });
+  };
+
+  const handleMigrateTasks = async () => {
+    setIsMigrating(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const result = await realtimeSyncService.migrateFromLocalStorage();
+      
+      if (result.success) {
+        setMessage({
+          type: 'success',
+          text: `✅ ${result.migrated} tareas migradas exitosamente a Supabase. Ahora todos los participantes pueden verlas.`
+        });
+        
+        // Recargar la página después de 2 segundos
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setMessage({
+          type: 'error',
+          text: `❌ Error al migrar tareas: ${result.error?.message || 'Error desconocido'}`
+        });
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: `❌ Error al migrar: ${error.message}`
+      });
+    } finally {
+      setIsMigrating(false);
+    }
   };
 
   return (
@@ -224,7 +259,21 @@ export function GoogleIntegration({ onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200">
+        <div className="bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200 space-y-3">
+          {/* Botón de migración */}
+          <button
+            onClick={handleMigrateTasks}
+            disabled={isMigrating}
+            className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Database className="w-5 h-5" />
+            {isMigrating ? 'Migrando tareas...' : 'Migrar Tareas a Supabase'}
+          </button>
+          
+          <p className="text-xs text-gray-600 text-center">
+            Haz clic aquí para sincronizar tus tareas existentes con Supabase y permitir que todo el equipo las vea en tiempo real
+          </p>
+          
           <button
             onClick={onClose}
             className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
