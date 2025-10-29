@@ -63,16 +63,3 @@ export function AppWithGoogleIntegration({ children }) {
     </>
   );
 }
-
-// Hook para usar en cualquier componente
-export function useProgressTokenDetection() {
-  const [hasToken, setHasToken] = useState(false);
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    setHasToken(!!token);
-  }, []);
-
-  return hasToken;
-}

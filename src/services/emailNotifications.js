@@ -72,158 +72,166 @@ class EmailNotificationService {
    * Crea el contenido HTML del email
    */
   async createEmailHTML(task, participant, actionLinks) {
+    const diasRestantes = Math.ceil((new Date(task.fecha_fin) - new Date()) / (1000 * 60 * 60 * 24));
+    const urgencia = diasRestantes < 0 ? 'atrasada' : diasRestantes <= 3 ? 'urgente' : 'normal';
+    
     return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notificación de Tarea</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f5f5f5;
-    }
-    .container {
-      background-color: white;
-      border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .header {
-      border-bottom: 3px solid #3b82f6;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    h1 {
-      color: #1e40af;
-      margin: 0;
-      font-size: 24px;
-    }
-    .task-info {
-      background-color: #f8fafc;
-      border-left: 4px solid #3b82f6;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 4px;
-    }
-    .task-info p {
-      margin: 8px 0;
-    }
-    .task-info strong {
-      color: #1e40af;
-    }
-    .progress-bar {
-      width: 100%;
-      height: 24px;
-      background-color: #e5e7eb;
-      border-radius: 12px;
-      overflow: hidden;
-      margin: 15px 0;
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #2563eb);
-      transition: width 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 12px;
-    }
-    .actions {
-      margin: 30px 0;
-    }
-    .button {
-      display: inline-block;
-      padding: 12px 24px;
-      margin: 8px 8px 8px 0;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .button-primary {
-      background-color: #3b82f6;
-      color: white;
-    }
-    .button-primary:hover {
-      background-color: #2563eb;
-    }
-    .button-success {
-      background-color: #10b981;
-      color: white;
-    }
-    .button-success:hover {
-      background-color: #059669;
-    }
-    .button-secondary {
-      background-color: #6b7280;
-      color: white;
-    }
-    .button-secondary:hover {
-      background-color: #4b5563;
-    }
-    .footer {
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 12px;
-      color: #6b7280;
-      text-align: center;
-    }
-  </style>
+  <title>Nueva Tarea Asignada</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>📋 Nueva Tarea Asignada</h1>
-    </div>
-    
-    <p>Hola <strong>${participant.nombre}</strong>,</p>
-    
-    <p>Se te ha asignado una nueva tarea en el proyecto:</p>
-    
-    <div class="task-info">
-      <p><strong>Tarea:</strong> ${task.nombre}</p>
-      <p><strong>Descripción:</strong> ${task.descripcion || 'Sin descripción'}</p>
-      <p><strong>Fecha de inicio:</strong> ${new Date(task.fecha_inicio).toLocaleDateString('es-ES')}</p>
-      <p><strong>Fecha de fin:</strong> ${new Date(task.fecha_fin).toLocaleDateString('es-ES')}</p>
-      <p><strong>Estado:</strong> ${this.getStatusLabel(task.estado)}</p>
-    </div>
-    
-    <p><strong>Progreso actual:</strong></p>
-    <div class="progress-bar">
-      <div class="progress-fill" style="width: ${task.progreso}%">
-        ${task.progreso}%
-      </div>
-    </div>
-    
-    <div class="actions">
-      <p><strong>Actualiza el progreso directamente desde este correo:</strong></p>
-      <a href="${actionLinks.increase25}" class="button button-primary">
-        ➕ Aumentar 25%
-      </a>
-      <a href="${actionLinks.complete}" class="button button-success">
-        ✅ Marcar como Completada
-      </a>
-      <a href="${actionLinks.viewTask}" class="button button-secondary">
-        👁️ Ver Tarea
-      </a>
-    </div>
-    
-    <div class="footer">
-      <p>Este es un correo automático del sistema de gestión de proyectos.</p>
-      <p>Los enlaces de acción son válidos por 30 días.</p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <!-- Header con gradiente -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                🎯 Nueva Tarea Asignada
+              </h1>
+              <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 14px;">Proyecto Dayan - Cronograma Musical</p>
+            </td>
+          </tr>
+          
+          <!-- Saludo -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px;">
+              <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                Hola <strong style="color: #667eea;">${participant.nombre || participant.email.split('@')[0]}</strong> 👋
+              </p>
+              <p style="margin: 15px 0 0 0; font-size: 16px; color: #374151; line-height: 1.6;">
+                Se te ha asignado una nueva tarea. Aquí están los detalles:
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Información de la tarea con diseño mejorado -->
+          <tr>
+            <td style="padding: 0 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; border-left: 5px solid #667eea; overflow: hidden;">
+                <tr>
+                  <td style="padding: 25px;">
+                    <!-- Título de la tarea -->
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 5px 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Tarea</p>
+                      <h2 style="margin: 0; font-size: 22px; color: #1e293b; font-weight: 700;">${task.nombre}</h2>
+                    </div>
+                    
+                    <!-- Descripción -->
+                    ${task.descripcion ? `
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 5px 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Descripción</p>
+                      <p style="margin: 0; font-size: 15px; color: #475569; line-height: 1.6;">${task.descripcion}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Fechas en grid -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                      <tr>
+                        <td width="50%" style="padding-right: 10px;">
+                          <div style="background-color: #ffffff; padding: 15px; border-radius: 8px;">
+                            <p style="margin: 0 0 5px 0; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">📅 Inicio</p>
+                            <p style="margin: 0; font-size: 16px; color: #1e293b; font-weight: 600;">${new Date(task.fecha_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          </div>
+                        </td>
+                        <td width="50%" style="padding-left: 10px;">
+                          <div style="background-color: #ffffff; padding: 15px; border-radius: 8px;">
+                            <p style="margin: 0 0 5px 0; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">🏁 Fin</p>
+                            <p style="margin: 0; font-size: 16px; color: #1e293b; font-weight: 600;">${new Date(task.fecha_fin).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <!-- Estado y días restantes -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 15px;">
+                      <tr>
+                        <td width="50%" style="padding-right: 10px;">
+                          <div style="background-color: #ffffff; padding: 15px; border-radius: 8px;">
+                            <p style="margin: 0 0 5px 0; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Estado</p>
+                            <p style="margin: 0; font-size: 15px; color: #1e293b; font-weight: 600;">${this.getStatusLabel(task.estado)}</p>
+                          </div>
+                        </td>
+                        <td width="50%" style="padding-left: 10px;">
+                          <div style="background-color: ${urgencia === 'atrasada' ? '#fee2e2' : urgencia === 'urgente' ? '#fef3c7' : '#ffffff'}; padding: 15px; border-radius: 8px;">
+                            <p style="margin: 0 0 5px 0; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">⏰ Tiempo</p>
+                            <p style="margin: 0; font-size: 15px; color: ${urgencia === 'atrasada' ? '#dc2626' : urgencia === 'urgente' ? '#d97706' : '#1e293b'}; font-weight: 600;">
+                              ${diasRestantes < 0 ? `${Math.abs(diasRestantes)} días atrasada` : diasRestantes === 0 ? 'Vence hoy' : `${diasRestantes} días restantes`}
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Barra de progreso mejorada -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #6b7280; font-weight: 600;">PROGRESO ACTUAL</p>
+              <div style="background-color: #e5e7eb; border-radius: 12px; height: 32px; overflow: hidden; position: relative;">
+                <div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); height: 100%; width: ${task.progreso}%; display: flex; align-items: center; justify-content: center; transition: width 0.3s ease;">
+                  <span style="color: #ffffff; font-weight: 700; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">${task.progreso}%</span>
+                </div>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Botones de acción mejorados -->
+          <tr>
+            <td style="padding: 20px 30px 40px 30px;">
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #374151; font-weight: 600;">
+                ⚡ Actualiza el progreso con un clic:
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding: 0 5px 10px 0;">
+                    <a href="${actionLinks.increase25}" style="display: block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 24px; border-radius: 10px; font-weight: 600; text-align: center; font-size: 15px; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
+                      ➕ Aumentar 25%
+                    </a>
+                  </td>
+                  <td style="padding: 0 0 10px 5px;">
+                    <a href="${actionLinks.complete}" style="display: block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 16px 24px; border-radius: 10px; font-weight: 600; text-align: center; font-size: 15px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                      ✅ Completar
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding-top: 5px;">
+                    <a href="${actionLinks.viewTask}" style="display: block; background-color: #f3f4f6; color: #374151; text-decoration: none; padding: 16px 24px; border-radius: 10px; font-weight: 600; text-align: center; font-size: 15px; border: 2px solid #e5e7eb;">
+                      👁️ Ver Detalles de la Tarea
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer mejorado -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 25px 30px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #6b7280; text-align: center; line-height: 1.6;">
+                📧 Este es un correo automático del <strong>Sistema de Gestión de Proyectos</strong>
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                🔒 Los enlaces de acción son seguros y válidos por 30 días
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
     `;

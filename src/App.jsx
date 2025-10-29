@@ -244,7 +244,45 @@ function App() {
     }
   };
 
+  // Función para agregar participante en el modal de edición
+  const addParticipantToEditingTask = async (participantName) => {
+    if (!participantName.trim() || !editingTask) return;
+    
+    const participants = editingTask.participantes || [];
+    const trimmedName = participantName.trim();
+    
+    // Verificar si ya existe
+    if (participants.includes(trimmedName)) {
+      console.log('⚠️ Participante ya existe');
+      return;
+    }
+    
+    // Agregar a la tarea en edición
+    const updatedTask = {
+      ...editingTask,
+      participantes: [...participants, trimmedName]
+    };
+    setEditingTask(updatedTask);
+    
+    // Enviar notificación
+    console.log('📧 Enviando notificación a nuevo participante...');
+    try {
+      const result = await taskNotificationManager.notifyTaskAssignment(
+        updatedTask,
+        [trimmedName]
+      );
+      console.log('📬 Resultado:', result);
+      if (result.success) {
+        console.log('✅ Notificación enviada:', result.message);
+      }
+    } catch (error) {
+      console.error('❌ Error enviando notificación:', error);
+    }
+  };
+
   const addParticipant = async (taskId, participantName) => {
+    console.log('🔔 addParticipant llamado:', { taskId, participantName });
+    
     if (participantName.trim()) {
       let updatedTask = null;
       const newTasks = tasks.map(task => {
@@ -252,7 +290,10 @@ function App() {
           const participants = task.participantes || [];
           if (!participants.includes(participantName.trim())) {
             updatedTask = { ...task, participantes: [...participants, participantName.trim()] };
+            console.log('📝 Tarea actualizada con nuevo participante:', updatedTask);
             return updatedTask;
+          } else {
+            console.log('⚠️ Participante ya existe en la tarea');
           }
         }
         return task;
@@ -262,18 +303,26 @@ function App() {
       
       // Enviar notificación al nuevo participante
       if (updatedTask) {
+        console.log('📧 Intentando enviar notificación...');
         try {
           const result = await taskNotificationManager.notifyTaskAssignment(
             updatedTask,
             [participantName.trim()]
           );
+          console.log('📬 Resultado de notificación:', result);
           if (result.success) {
             console.log('✅ Notificación enviada:', result.message);
+          } else {
+            console.log('❌ Notificación falló:', result.message);
           }
         } catch (error) {
-          console.error('Error enviando notificación:', error);
+          console.error('❌ Error enviando notificación:', error);
         }
+      } else {
+        console.log('⚠️ No se envió notificación (participante ya existía o no se actualizó)');
       }
+    } else {
+      console.log('⚠️ Nombre de participante vacío');
     }
   };
 
@@ -1544,19 +1593,13 @@ function App() {
                         setTimeout(() => setShowSuggestions(false), 200);
                       }}
                       placeholder="Nombre del participante"
-                      onKeyPress={(e) => {
+                      onKeyPress={async (e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           if (newParticipant.trim()) {
-                            const participants = editingTask.participantes || [];
-                            if (!participants.includes(newParticipant.trim())) {
-                              setEditingTask({
-                                ...editingTask,
-                                participantes: [...participants, newParticipant.trim()]
-                              });
-                              setNewParticipant('');
-                              setShowSuggestions(false);
-                            }
+                            await addParticipantToEditingTask(newParticipant);
+                            setNewParticipant('');
+                            setShowSuggestions(false);
                           }
                         }
                       }}
@@ -1570,14 +1613,8 @@ function App() {
                           <button
                             key={idx}
                             type="button"
-                            onClick={() => {
-                              const participants = editingTask.participantes || [];
-                              if (!participants.includes(suggestion)) {
-                                setEditingTask({
-                                  ...editingTask,
-                                  participantes: [...participants, suggestion]
-                                });
-                              }
+                            onClick={async () => {
+                              await addParticipantToEditingTask(suggestion);
                               setNewParticipant('');
                               setShowSuggestions(false);
                             }}
@@ -1596,17 +1633,11 @@ function App() {
                   </div>
                   
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
                       if (newParticipant.trim()) {
-                        const participants = editingTask.participantes || [];
-                        if (!participants.includes(newParticipant.trim())) {
-                          setEditingTask({
-                            ...editingTask,
-                            participantes: [...participants, newParticipant.trim()]
-                          });
-                          setNewParticipant('');
-                          setShowSuggestions(false);
-                        }
+                        await addParticipantToEditingTask(newParticipant);
+                        setNewParticipant('');
+                        setShowSuggestions(false);
                       }
                     }}
                     className="gap-2 rounded-xl"
@@ -1647,12 +1678,8 @@ function App() {
                           key={idx} 
                           variant="gray"
                           className="cursor-pointer hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
-                          onClick={() => {
-                            const participants = editingTask.participantes || [];
-                            setEditingTask({
-                              ...editingTask,
-                              participantes: [...participants, participant]
-                            });
+                          onClick={async () => {
+                            await addParticipantToEditingTask(participant);
                           }}
                         >
                           + {participant}
