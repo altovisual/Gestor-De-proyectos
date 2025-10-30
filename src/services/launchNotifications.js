@@ -305,20 +305,184 @@ class LaunchNotificationService {
       for (const participant of participants) {
         console.log('👤 Procesando participante:', participant);
         console.log('📧 Email del participante:', participant.email);
+        console.log('📧 Tipo de email:', typeof participant.email);
+        console.log('📧 Email válido?', participant.email && participant.email.includes('@'));
         
-        if (participant.email) {
-          await emailNotificationService.sendEmail(
-            participant.email,
-            subject,
-            body
-          );
-          console.log(`✅ Notificación de lanzamiento enviada a ${participant.nombre} (${participant.email})`);
+        if (participant.email && participant.email.includes('@')) {
+          try {
+            await emailNotificationService.sendEmail(
+              participant.email,
+              subject,
+              body
+            );
+            console.log(`✅ Notificación de lanzamiento enviada a ${participant.nombre} (${participant.email})`);
+          } catch (emailError) {
+            console.error(`❌ Error enviando email a ${participant.nombre} (${participant.email}):`, emailError);
+          }
         } else {
-          console.log(`⚠️ Participante ${participant.nombre} no tiene email`);
+          console.log(`⚠️ Participante ${participant.nombre} no tiene email válido: "${participant.email}"`);
         }
       }
     } catch (error) {
       console.error('❌ Error al enviar notificaciones de lanzamiento:', error);
+    }
+  }
+
+  /**
+   * Envía reporte completo del lanzamiento con progreso y subtareas
+   */
+  async sendLaunchReport(launch, participants) {
+    if (!participants || participants.length === 0) {
+      console.log('ℹ️ No hay participantes para enviar el reporte');
+      return;
+    }
+
+    console.log('📧 Enviando reporte completo de lanzamiento:', {
+      launch: launch.nombre,
+      participants: participants.map(p => p.nombre)
+    });
+
+    const subject = `📊 Reporte de Lanzamiento: ${launch.nombre}`;
+    
+    // Calcular estadísticas
+    const totalAcciones = launch.acciones?.length || 0;
+    const accionesCompletadas = launch.acciones?.filter(a => a.estado === 'completado').length || 0;
+    const progreso = totalAcciones > 0 ? Math.round((accionesCompletadas / totalAcciones) * 100) : 0;
+    
+    // Agrupar acciones por fase
+    const fases = {
+      'pre-produccion': { nombre: '🎵 Pre-producción', acciones: [] },
+      'produccion': { nombre: '🎙️ Producción', acciones: [] },
+      'pre-lanzamiento': { nombre: '📢 Pre-lanzamiento', acciones: [] },
+      'lanzamiento': { nombre: '🚀 Lanzamiento', acciones: [] },
+      'post-lanzamiento': { nombre: '📈 Post-lanzamiento', acciones: [] }
+    };
+
+    launch.acciones?.forEach(accion => {
+      if (fases[accion.fase]) {
+        fases[accion.fase].acciones.push(accion);
+      }
+    });
+
+    const body = `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+        <h2 style="color: #2563eb; text-align: center;">📊 Reporte de Lanzamiento</h2>
+        
+        <!-- Información del Lanzamiento -->
+        <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #1e40af;">🎵 ${launch.nombre}</h3>
+          ${launch.artista ? `<p><strong>Artista:</strong> ${launch.artista}</p>` : ''}
+          <p><strong>Fecha de lanzamiento:</strong> ${new Date(launch.fechaLanzamiento).toLocaleDateString('es-ES', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })}</p>
+          ${launch.descripcion ? `<p><strong>Descripción:</strong> ${launch.descripcion}</p>` : ''}
+        </div>
+
+        <!-- Progreso General -->
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">📈 Progreso General</h3>
+          <div style="background-color: #e5e7eb; height: 20px; border-radius: 10px; overflow: hidden;">
+            <div style="background: linear-gradient(to right, #3b82f6, #1d4ed8); height: 100%; width: ${progreso}%; transition: width 0.3s;"></div>
+          </div>
+          <p style="margin: 10px 0 0 0; font-weight: bold; color: #1d4ed8;">${progreso}% completado (${accionesCompletadas}/${totalAcciones} acciones)</p>
+        </div>
+
+        <!-- Participantes -->
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">👥 Participantes del Lanzamiento</h3>
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            ${participants.map(p => `<li><strong>${p.nombre}</strong> (${p.email})</li>`).join('')}
+          </ul>
+        </div>
+
+        <!-- Acciones por Fase -->
+        ${Object.entries(fases).map(([faseId, fase]) => {
+          if (fase.acciones.length === 0) return '';
+          
+          const completadasFase = fase.acciones.filter(a => a.estado === 'completado').length;
+          const progresoFase = Math.round((completadasFase / fase.acciones.length) * 100);
+          
+          return `
+            <div style="margin: 30px 0; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+              <div style="background-color: #f8fafc; padding: 15px; border-bottom: 1px solid #e5e7eb;">
+                <h3 style="margin: 0; color: #374151;">${fase.nombre}</h3>
+                <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">${completadasFase}/${fase.acciones.length} acciones completadas (${progresoFase}%)</p>
+              </div>
+              <div style="padding: 15px;">
+                ${fase.acciones.map(accion => `
+                  <div style="margin-bottom: 20px; padding: 15px; background-color: #f9fafb; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                      <h4 style="margin: 0; color: #374151;">${accion.titulo}</h4>
+                      <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; ${this._getEstadoStyle(accion.estado)}">${this._getEstadoLabel(accion.estado)}</span>
+                    </div>
+                    ${accion.responsable ? `<p style="margin: 5px 0; font-size: 14px;"><strong>Responsable:</strong> ${accion.responsable}</p>` : ''}
+                    ${accion.fechaInicio ? `<p style="margin: 5px 0; font-size: 14px;"><strong>Fecha inicio:</strong> ${new Date(accion.fechaInicio).toLocaleDateString('es-ES')}</p>` : ''}
+                    ${accion.fechaFin ? `<p style="margin: 5px 0; font-size: 14px;"><strong>Fecha fin:</strong> ${new Date(accion.fechaFin).toLocaleDateString('es-ES')}</p>` : ''}
+                    
+                    ${accion.subtareas && accion.subtareas.length > 0 ? `
+                      <div style="margin-top: 15px;">
+                        <h5 style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">📝 Subtareas:</h5>
+                        <ul style="margin: 0; padding-left: 20px;">
+                          ${accion.subtareas.map(st => `
+                            <li style="margin: 5px 0; font-size: 14px; ${st.completada ? 'text-decoration: line-through; color: #9ca3af;' : 'color: #374151;'}">
+                              ${st.completada ? '✅' : '⏳'} ${st.titulo}
+                            </li>
+                          `).join('')}
+                        </ul>
+                        <p style="margin: 10px 0 0 0; font-size: 12px; color: #6b7280;">
+                          ${accion.subtareas.filter(st => st.completada).length} de ${accion.subtareas.length} subtareas completadas
+                        </p>
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('')}
+
+        <!-- Footer -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #6b7280; font-size: 14px;">
+            Reporte generado automáticamente el ${new Date().toLocaleDateString('es-ES', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 10px;">
+            Sistema de Gestión de Proyectos Musicales
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      for (const participant of participants) {
+        console.log('👤 Enviando reporte a participante:', participant);
+        
+        if (participant.email && participant.email.includes('@')) {
+          try {
+            await emailNotificationService.sendEmail(
+              participant.email,
+              subject,
+              body
+            );
+            console.log(`✅ Reporte enviado a ${participant.nombre} (${participant.email})`);
+          } catch (emailError) {
+            console.error(`❌ Error enviando reporte a ${participant.nombre} (${participant.email}):`, emailError);
+          }
+        } else {
+          console.log(`⚠️ Participante ${participant.nombre} no tiene email válido: "${participant.email}"`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error al enviar reportes:', error);
+      throw error;
     }
   }
 
@@ -352,6 +516,26 @@ class LaunchNotificationService {
       'pendiente': '<span style="background-color: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 4px; font-weight: bold;">⏳ Pendiente</span>'
     };
     return badges[estado] || estado;
+  }
+
+  _getEstadoStyle(estado) {
+    const styles = {
+      'completado': 'background-color: #dcfce7; color: #166534;',
+      'en-progreso': 'background-color: #dbeafe; color: #1e40af;',
+      'retrasado': 'background-color: #fee2e2; color: #991b1b;',
+      'pendiente': 'background-color: #f3f4f6; color: #374151;'
+    };
+    return styles[estado] || styles['pendiente'];
+  }
+
+  _getEstadoLabel(estado) {
+    const labels = {
+      'completado': '✅ Completado',
+      'en-progreso': '🔄 En Progreso',
+      'retrasado': '⚠️ Retrasado',
+      'pendiente': '⏳ Pendiente'
+    };
+    return labels[estado] || estado;
   }
 }
 

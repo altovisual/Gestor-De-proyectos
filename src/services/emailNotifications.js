@@ -260,10 +260,39 @@ class EmailNotificationService {
     }
 
     // Validar email
-    if (!to || typeof to !== 'string' || !to.includes('@')) {
-      console.error('❌ Email inválido:', to);
-      throw new Error('Invalid To header');
+    console.log('🔍 Validando email:', to, 'tipo:', typeof to);
+    
+    if (!to) {
+      console.error('❌ Email es null/undefined:', to);
+      throw new Error('Email is null or undefined');
     }
+    
+    if (typeof to !== 'string') {
+      console.error('❌ Email no es string:', to, 'tipo:', typeof to);
+      throw new Error('Email must be a string');
+    }
+    
+    if (!to.includes('@')) {
+      console.error('❌ Email no contiene @:', to);
+      throw new Error('Email must contain @');
+    }
+    
+    // Limpiar email malformado (remover @temp.com duplicado)
+    let cleanEmail = to;
+    if (to.includes('@temp.com')) {
+      cleanEmail = to.replace('@temp.com', '');
+      console.log('🧹 Email limpiado:', to, '→', cleanEmail);
+    }
+    
+    // Validación adicional de formato básico
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      console.error('❌ Email con formato inválido:', cleanEmail);
+      throw new Error('Invalid email format');
+    }
+    
+    // Usar el email limpio
+    to = cleanEmail;
 
     console.log('📧 Enviando email a:', to);
     console.log('📧 Asunto:', subject);

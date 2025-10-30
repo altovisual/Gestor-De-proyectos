@@ -179,10 +179,18 @@ class ParticipantsSyncService {
       let migrated = 0;
       for (const participant of participants) {
         // Convertir formato antiguo a nuevo
+        let email = participant.email;
+        let nombre = participant.nombre || participant.name || participant;
+        
+        // Si no hay email válido, generar uno temporal
+        if (!email || !email.includes('@')) {
+          email = `${nombre.toLowerCase().replace(/\s+/g, '.')}@temp.com`;
+        }
+        
         const participantData = {
           id: `participant-${Date.now()}-${migrated}`,
-          nombre: participant.nombre || participant.name || participant,
-          email: participant.email || `${participant}@temp.com`, // Email temporal si no existe
+          nombre: nombre,
+          email: email,
           rol: 'miembro'
         };
         

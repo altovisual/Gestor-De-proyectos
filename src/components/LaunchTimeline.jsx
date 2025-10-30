@@ -22,7 +22,8 @@ import {
   Target,
   BarChart3,
   Download,
-  FileText
+  FileText,
+  Mail
 } from 'lucide-react';
 import { launchExportService } from '../services/launchExport';
 import { launchesSyncService } from '../services/launchesSync';
@@ -468,10 +469,7 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
         await launchesSyncService.saveLaunch(launch);
         console.log('✅ Lanzamiento guardado en Supabase');
         
-        // Enviar notificaciones a los participantes si los hay
-        if (launch.participantes && launch.participantes.length > 0) {
-          await launchNotificationService.notifyLaunchCreated(launch, launch.participantes);
-        }
+        // Nota: Las notificaciones ahora se envían manualmente con el botón de email
       } catch (error) {
         console.error('❌ Error al guardar lanzamiento:', error);
         alert('Error al crear el lanzamiento. Por favor intenta de nuevo.');
@@ -828,6 +826,31 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
     }
   };
 
+  // Función para enviar reporte por email
+  const handleSendLaunchReport = async (launch, event) => {
+    event.stopPropagation();
+    
+    if (!launch.participantes || launch.participantes.length === 0) {
+      alert('Este lanzamiento no tiene participantes asignados.');
+      return;
+    }
+
+    const confirmSend = window.confirm(
+      `¿Enviar reporte completo del lanzamiento "${launch.nombre}" a ${launch.participantes.length} participante(s)?`
+    );
+
+    if (!confirmSend) return;
+
+    try {
+      console.log('📧 Enviando reporte de lanzamiento:', launch.nombre);
+      await launchNotificationService.sendLaunchReport(launch, launch.participantes);
+      alert('✅ Reporte enviado exitosamente a todos los participantes!');
+    } catch (error) {
+      console.error('❌ Error al enviar reporte:', error);
+      alert('❌ Error al enviar el reporte. Revisa la consola para más detalles.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -892,6 +915,14 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
                       )}
                     </div>
                     <div className="flex gap-1">
+                      <button
+                        onClick={(e) => handleSendLaunchReport(launch, e)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Enviar reporte por email a participantes"
+                        disabled={!launch.participantes || launch.participantes.length === 0}
+                      >
+                        <Mail className={`w-4 h-4 ${launch.participantes && launch.participantes.length > 0 ? 'text-purple-500' : 'text-gray-300'}`} />
+                      </button>
                       <button
                         onClick={(e) => handleExportSingle(launch, e)}
                         className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
