@@ -102,7 +102,25 @@ export const launchExportService = {
       ['Acciones Pendientes:', launch.acciones?.filter(a => a.estado === 'pendiente').length || 0],
       ['Acciones Retrasadas:', launch.acciones?.filter(a => a.estado === 'retrasado').length || 0],
       ['Progreso General:', `${launchExportService._calculateProgress(launch)}%`],
+      [],
+      ['👥 Participantes del Lanzamiento'],
+      ['Total de Participantes:', launch.participantes?.length || 0],
+      []
     ];
+    
+    // Agregar lista de participantes con correos
+    if (launch.participantes && launch.participantes.length > 0) {
+      infoData.push(['Lista de Participantes:']);
+      infoData.push(['Nombre', 'Correo Electrónico']);
+      launch.participantes.forEach(participante => {
+        infoData.push([
+          participante.nombre || 'Sin nombre',
+          participante.email || 'Sin email'
+        ]);
+      });
+    } else {
+      infoData.push(['No hay participantes asignados']);
+    }
     
     const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
     wsInfo['!cols'] = [{ wch: 30 }, { wch: 50 }];
@@ -315,9 +333,29 @@ export const launchExportService = {
       ['Fecha de Lanzamiento:', new Date(launch.fechaLanzamiento).toLocaleDateString('es-ES')],
       ['Progreso General:', `${launchExportService._calculateProgress(launch)}%`],
       [],
-      ['ACCIONES POR FASE'],
+      ['👥 PARTICIPANTES DEL LANZAMIENTO'],
       []
     ];
+
+    // Agregar participantes con sus correos
+    if (launch.participantes && launch.participantes.length > 0) {
+      data.push(['Nombre', 'Correo Electrónico', 'Rol']);
+      launch.participantes.forEach(participante => {
+        data.push([
+          participante.nombre || 'Sin nombre',
+          participante.email || 'Sin email',
+          participante.rol || 'Miembro'
+        ]);
+      });
+      data.push([]);
+      data.push([`Total de participantes: ${launch.participantes.length}`]);
+    } else {
+      data.push(['No hay participantes asignados a este lanzamiento']);
+    }
+    
+    data.push([]);
+    data.push(['ACCIONES POR FASE']);
+    data.push([]);
     
     const fases = [
       { id: 'pre-produccion', nombre: '🎵 PRE-PRODUCCIÓN', emoji: '🎵' },

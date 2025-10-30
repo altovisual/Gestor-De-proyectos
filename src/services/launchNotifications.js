@@ -392,9 +392,20 @@ class LaunchNotificationService {
         <!-- Participantes -->
         <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">👥 Participantes del Lanzamiento</h3>
-          <ul style="margin: 10px 0; padding-left: 20px;">
-            ${participants.map(p => `<li><strong>${p.nombre}</strong> (${p.email})</li>`).join('')}
-          </ul>
+          <div style="margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">📧 Lista de Correos:</h4>
+            <div style="background-color: #ffffff; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">
+              ${participants.map(p => `
+                <div style="margin: 8px 0; padding: 8px 12px; background-color: #f3f4f6; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: bold; color: #374151;">${p.nombre}</span>
+                  <span style="color: #6b7280; font-family: monospace; font-size: 13px;">${p.email}</span>
+                </div>
+              `).join('')}
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 12px; color: #6b7280; text-align: center;">
+              Total: ${participants.length} participante(s) • Este reporte se envió a todos los correos listados
+            </p>
+          </div>
         </div>
 
         <!-- Acciones por Fase -->
