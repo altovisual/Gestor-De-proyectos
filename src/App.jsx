@@ -15,6 +15,7 @@ import SimpleIdeasManager from './components/SimpleIdeasManager';
 import { taskNotificationManager } from './services/taskNotificationManager';
 import { realtimeSyncService } from './services/realtimeSync';
 import { participantsSyncService } from './services/participantsSync';
+import { launchesSyncService } from './services/launchesSync';
 import { googleCalendarService } from './services/googleCalendar';
 
 function App() {
@@ -171,11 +172,41 @@ function App() {
     };
   }, []);
 
-  // Cargar perspectivas, KPIs y lanzamientos desde localStorage
+  // Sincronizar lanzamientos en tiempo real
+  useEffect(() => {
+    const initializeLaunches = async () => {
+      // Migrar lanzamientos de localStorage si existen
+      const localLaunches = localStorage.getItem('proyectoDayanLaunches');
+      if (localLaunches) {
+        const launches = JSON.parse(localLaunches);
+        if (launches.length > 0) {
+          console.log('🔄 Detectados lanzamientos locales, migrando automáticamente...');
+          await launchesSyncService.migrateFromLocalStorage();
+        }
+      }
+      
+      // Iniciar sincronización en tiempo real
+      launchesSyncService.startSync((updatedLaunches) => {
+        console.log('📥 Lanzamientos actualizados desde Supabase:', updatedLaunches.length);
+        setLaunches(updatedLaunches);
+        
+        // También guardar en localStorage como backup
+        localStorage.setItem('proyectoDayanLaunches', JSON.stringify(updatedLaunches));
+      });
+    };
+    
+    initializeLaunches();
+    
+    // Limpiar al desmontar
+    return () => {
+      launchesSyncService.stopSync();
+    };
+  }, []);
+
+  // Cargar perspectivas, KPIs e ideas desde localStorage
   useEffect(() => {
     const savedPerspectives = localStorage.getItem('proyectoDayanPerspectives');
     const savedKPIs = localStorage.getItem('proyectoDayanKPIs');
-    const savedLaunches = localStorage.getItem('proyectoDayanLaunches');
     
     if (savedPerspectives) {
       setCustomPerspectives(JSON.parse(savedPerspectives));
@@ -183,10 +214,6 @@ function App() {
     
     if (savedKPIs) {
       setKpis(JSON.parse(savedKPIs));
-    }
-    
-    if (savedLaunches) {
-      setLaunches(JSON.parse(savedLaunches));
     }
 
     const savedIdeas = localStorage.getItem('proyectoDayanIdeas');
@@ -241,10 +268,7 @@ function App() {
     localStorage.setItem('proyectoDayanKPIs', JSON.stringify(kpis));
   }, [kpis]);
 
-  // Guardar lanzamientos en localStorage
-  useEffect(() => {
-    localStorage.setItem('proyectoDayanLaunches', JSON.stringify(launches));
-  }, [launches]);
+  // Lanzamientos ya no se guardan en localStorage, se sincronizan automáticamente con Supabase
 
   // Guardar ideas en localStorage
   useEffect(() => {

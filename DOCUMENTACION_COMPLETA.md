@@ -37,6 +37,7 @@ El **Sistema de Gestión de Cronogramas Musicales** es una aplicación web moder
 - ✅ **Sistema de Perspectivas** personalizables
 - ✅ **Gestión de Ideas y Lanzamientos**
 - ✅ **Exportación a Excel** con estadísticas
+- ✅ **Reportes de Lanzamientos** profesionales para equipo y directivos
 - ✅ **Interfaz Moderna** estilo iOS con Tailwind CSS
 
 ### Tecnologías Utilizadas
@@ -262,15 +263,37 @@ Usuario → React UI → Servicios → Supabase/Google APIs
 
 #### Planificar Lanzamientos
 - Nombre del lanzamiento
+- Artista
 - Fecha de lanzamiento
-- Tipo (Sencillo, EP, Álbum, Video)
-- Estado
 - Descripción
+- Generación automática de cronograma con plantillas
 
 #### Seguimiento
 - Lista de todos los lanzamientos
-- Filtros por estado y tipo
+- Progreso visual por lanzamiento
+- Acciones organizadas por fases:
+  - Pre-producción
+  - Producción
+  - Pre-lanzamiento
+  - Lanzamiento
+  - Post-lanzamiento
+- Subtareas detalladas por acción
 - Edición y eliminación
+
+#### Exportación de Reportes de Lanzamientos
+- **Reporte General**: Exporta todos los lanzamientos con:
+  - Resumen ejecutivo con estadísticas
+  - Cronograma general ordenado por fecha
+  - Hojas detalladas por cada lanzamiento
+  - Métricas y KPIs de rendimiento
+- **Reporte Individual**: Exporta un lanzamiento específico con:
+  - Información general y estadísticas
+  - Cronograma detallado por fases
+  - Análisis de progreso por fase
+  - Subtareas con estado de completación
+- Formato Excel profesional
+- Descarga automática
+- Ideal para compartir con equipo y directivos
 
 ### 9. KPIs y Métricas
 
@@ -597,6 +620,32 @@ taskNotificationManager.notifyTaskAssignment(task, participants)
 taskNotificationManager.notifyProgressUpdate(task, oldProgress, newProgress)
 taskNotificationManager.notifyStatusChange(task, oldStatus, newStatus)
 ```
+
+### Servicio de Exportación de Lanzamientos (launchExport.js)
+
+```javascript
+// Métodos principales
+launchExportService.exportLaunchesReport(launches, tasks)  // Exportar todos los lanzamientos
+launchExportService.exportSingleLaunch(launch)             // Exportar un lanzamiento específico
+```
+
+#### Características del Servicio
+- Genera archivos Excel profesionales (.xlsx)
+- Múltiples hojas organizadas por tipo de información
+- Cálculos automáticos de métricas y KPIs
+- Formato optimizado para lectura y presentación
+- Compatible con Excel, Google Sheets y LibreOffice
+
+#### Hojas Generadas en Reporte General
+1. **Resumen Ejecutivo**: Estadísticas generales y próximos lanzamientos
+2. **Cronograma General**: Timeline de todos los lanzamientos
+3. **Hojas Detalladas**: Una por cada lanzamiento (hasta 10)
+4. **Métricas y KPIs**: Análisis de rendimiento y distribución
+
+#### Hojas Generadas en Reporte Individual
+1. **Información General**: Datos básicos y estadísticas del lanzamiento
+2. **Cronograma Detallado**: Acciones organizadas por fase
+3. **Análisis por Fase**: Progreso y métricas de cada fase
 
 ---
 

@@ -20,8 +20,12 @@ import {
   Play,
   Rocket,
   Target,
-  BarChart3
+  BarChart3,
+  Download,
+  FileText
 } from 'lucide-react';
+import { launchExportService } from '../services/launchExport';
+import { launchesSyncService } from '../services/launchesSync';
 
 const LaunchTimeline = ({ launches, setLaunches }) => {
   const [showAddLaunch, setShowAddLaunch] = useState(false);
@@ -419,7 +423,7 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
     ]
   };
 
-  const addLaunch = () => {
+  const addLaunch = async () => {
     console.log('addLaunch called', newLaunch);
     if (newLaunch.nombre && newLaunch.fechaLanzamiento) {
       const launch = {
@@ -429,7 +433,15 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
         fechaCreacion: new Date().toISOString()
       };
       console.log('Creating launch:', launch);
-      setLaunches([...launches, launch]);
+      
+      try {
+        await launchesSyncService.saveLaunch(launch);
+        console.log('✅ Lanzamiento guardado en Supabase');
+      } catch (error) {
+        console.error('❌ Error al guardar lanzamiento:', error);
+        alert('Error al crear el lanzamiento. Por favor intenta de nuevo.');
+      }
+      
       setNewLaunch({
         nombre: '',
         artista: '',
@@ -442,7 +454,7 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
     }
   };
 
-  const generarCronogramaAutomatico = (launch) => {
+  const generarCronogramaAutomatico = async (launch) => {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0); // Resetear horas para comparación
     const fechaLanzamiento = new Date(launch.fechaLanzamiento);
@@ -499,11 +511,16 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
       acciones: acciones
     };
 
-    setLaunches(launches.map(l => l.id === launch.id ? updatedLaunch : l));
-    setSelectedLaunch(updatedLaunch);
+    try {
+      await launchesSyncService.saveLaunch(updatedLaunch);
+      setSelectedLaunch(updatedLaunch);
+    } catch (error) {
+      console.error('❌ Error al generar cronograma:', error);
+      alert('Error al generar el cronograma. Por favor intenta de nuevo.');
+    }
   };
 
-  const addAction = () => {
+  const addAction = async () => {
     if (newAction.titulo && selectedLaunch) {
       const action = {
         id: Date.now().toString(),
@@ -515,22 +532,27 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
         acciones: [...(selectedLaunch.acciones || []), action]
       };
 
-      setLaunches(launches.map(l => l.id === selectedLaunch.id ? updatedLaunch : l));
-      setSelectedLaunch(updatedLaunch);
-      setNewAction({
-        titulo: '',
-        fase: '',
-        responsable: '',
-        fechaInicio: '',
-        fechaFin: '',
-        estado: 'pendiente',
-        prioridad: 'media'
-      });
-      setShowAddAction(false);
+      try {
+        await launchesSyncService.saveLaunch(updatedLaunch);
+        setSelectedLaunch(updatedLaunch);
+        setNewAction({
+          titulo: '',
+          fase: '',
+          responsable: '',
+          fechaInicio: '',
+          fechaFin: '',
+          estado: 'pendiente',
+          prioridad: 'media'
+        });
+        setShowAddAction(false);
+      } catch (error) {
+        console.error('❌ Error al agregar acción:', error);
+        alert('Error al agregar la acción. Por favor intenta de nuevo.');
+      }
     }
   };
 
-  const updateActionStatus = (launchId, actionId, newStatus) => {
+  const updateActionStatus = async (launchId, actionId, newStatus) => {
     const launch = launches.find(l => l.id === launchId);
     const updatedLaunch = {
       ...launch,
@@ -538,28 +560,45 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
         a.id === actionId ? { ...a, estado: newStatus } : a
       )
     };
-    setLaunches(launches.map(l => l.id === launchId ? updatedLaunch : l));
-    if (selectedLaunch?.id === launchId) {
-      setSelectedLaunch(updatedLaunch);
+    
+    try {
+      await launchesSyncService.saveLaunch(updatedLaunch);
+      if (selectedLaunch?.id === launchId) {
+        setSelectedLaunch(updatedLaunch);
+      }
+    } catch (error) {
+      console.error('❌ Error al actualizar estado:', error);
     }
   };
 
-  const deleteLaunch = (id) => {
+  const deleteLaunch = async (id) => {
     if (window.confirm('¿Eliminar este lanzamiento?')) {
-      setLaunches(launches.filter(l => l.id !== id));
-      if (selectedLaunch?.id === id) {
-        setSelectedLaunch(null);
+      try {
+        await launchesSyncService.deleteLaunch(id);
+        console.log('✅ Lanzamiento eliminado de Supabase');
+        if (selectedLaunch?.id === id) {
+          setSelectedLaunch(null);
+        }
+      } catch (error) {
+        console.error('❌ Error al eliminar lanzamiento:', error);
+        alert('Error al eliminar el lanzamiento. Por favor intenta de nuevo.');
       }
     }
   };
 
-  const updateLaunch = (updatedLaunch) => {
-    setLaunches(launches.map(l => l.id === updatedLaunch.id ? updatedLaunch : l));
-    setSelectedLaunch(updatedLaunch);
-    setShowEditLaunch(false);
+  const updateLaunch = async (updatedLaunch) => {
+    try {
+      await launchesSyncService.saveLaunch(updatedLaunch);
+      console.log('✅ Lanzamiento actualizado en Supabase');
+      setSelectedLaunch(updatedLaunch);
+      setShowEditLaunch(false);
+    } catch (error) {
+      console.error('❌ Error al actualizar lanzamiento:', error);
+      alert('Error al actualizar el lanzamiento. Por favor intenta de nuevo.');
+    }
   };
 
-  const updateAction = (launchId, actionId, updates) => {
+  const updateAction = async (launchId, actionId, updates) => {
     const launch = launches.find(l => l.id === launchId);
     const updatedLaunch = {
       ...launch,
@@ -567,22 +606,33 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
         a.id === actionId ? { ...a, ...updates } : a
       )
     };
-    setLaunches(launches.map(l => l.id === launchId ? updatedLaunch : l));
-    if (selectedLaunch?.id === launchId) {
-      setSelectedLaunch(updatedLaunch);
+    
+    try {
+      await launchesSyncService.saveLaunch(updatedLaunch);
+      if (selectedLaunch?.id === launchId) {
+        setSelectedLaunch(updatedLaunch);
+      }
+    } catch (error) {
+      console.error('❌ Error al actualizar acción:', error);
     }
   };
 
-  const deleteAction = (launchId, actionId) => {
+  const deleteAction = async (launchId, actionId) => {
     if (window.confirm('¿Eliminar esta acción?')) {
       const launch = launches.find(l => l.id === launchId);
       const updatedLaunch = {
         ...launch,
         acciones: launch.acciones.filter(a => a.id !== actionId)
       };
-      setLaunches(launches.map(l => l.id === launchId ? updatedLaunch : l));
-      if (selectedLaunch?.id === launchId) {
-        setSelectedLaunch(updatedLaunch);
+      
+      try {
+        await launchesSyncService.saveLaunch(updatedLaunch);
+        if (selectedLaunch?.id === launchId) {
+          setSelectedLaunch(updatedLaunch);
+        }
+      } catch (error) {
+        console.error('❌ Error al eliminar acción:', error);
+        alert('Error al eliminar la acción. Por favor intenta de nuevo.');
       }
     }
   };
@@ -656,6 +706,28 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
     return diff;
   };
 
+  // Funciones de exportación
+  const handleExportAll = () => {
+    try {
+      const fileName = launchExportService.exportLaunchesReport(launches);
+      console.log('✅ Reporte exportado:', fileName);
+    } catch (error) {
+      console.error('❌ Error al exportar reporte:', error);
+      alert('Error al exportar el reporte. Por favor intenta de nuevo.');
+    }
+  };
+
+  const handleExportSingle = (launch, event) => {
+    event.stopPropagation();
+    try {
+      const fileName = launchExportService.exportSingleLaunch(launch);
+      console.log('✅ Lanzamiento exportado:', fileName);
+    } catch (error) {
+      console.error('❌ Error al exportar lanzamiento:', error);
+      alert('Error al exportar el lanzamiento. Por favor intenta de nuevo.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -666,10 +738,22 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
             Planifica y coordina el lanzamiento de tus canciones
           </p>
         </div>
-        <Button onClick={() => setShowAddLaunch(true)} className="gap-2 rounded-xl">
-          <Plus className="w-4 h-4" />
-          Nuevo Lanzamiento
-        </Button>
+        <div className="flex gap-2">
+          {launches.length > 0 && (
+            <Button 
+              onClick={handleExportAll} 
+              variant="outline" 
+              className="gap-2 rounded-xl"
+            >
+              <Download className="w-4 h-4" />
+              Exportar Reporte
+            </Button>
+          )}
+          <Button onClick={() => setShowAddLaunch(true)} className="gap-2 rounded-xl">
+            <Plus className="w-4 h-4" />
+            Nuevo Lanzamiento
+          </Button>
+        </div>
       </div>
 
       {/* Lista de lanzamientos */}
@@ -708,6 +792,13 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
                       )}
                     </div>
                     <div className="flex gap-1">
+                      <button
+                        onClick={(e) => handleExportSingle(launch, e)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Exportar reporte de este lanzamiento"
+                      >
+                        <FileText className="w-4 h-4 text-green-500" />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -807,14 +898,24 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
               <CardTitle className="text-xl">
                 {selectedLaunch.nombre} - Cronograma Detallado
               </CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowAddAction(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nueva Acción
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => handleExportSingle(selectedLaunch, e)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddAction(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Acción
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
