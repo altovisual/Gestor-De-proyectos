@@ -670,10 +670,38 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
 
   const updateAction = async (launchId, actionId, updates) => {
     const launch = launches.find(l => l.id === launchId);
+    const action = launch.acciones.find(a => a.id === actionId);
+    
+    // Crear la acción actualizada
+    let updatedAction = { ...action, ...updates };
+    
+    // Auto-completar acción si todas las subtareas están completadas
+    if (updates.subtareas && updates.subtareas.length > 0) {
+      const allSubtasksCompleted = updates.subtareas.every(st => st.completada);
+      const hasIncompleteSubtasks = updates.subtareas.some(st => !st.completada);
+      
+      if (allSubtasksCompleted && action.estado !== 'completado') {
+        // Todas las subtareas completadas → cambiar estado a completado
+        updatedAction.estado = 'completado';
+        console.log('🎉 Todas las subtareas completadas, cambiando estado a completado');
+        
+        // Notificar a los participantes sobre la finalización
+        if (action.participantes && action.participantes.length > 0) {
+          setTimeout(() => {
+            launchNotificationService.notifyActionCompleted(launch, updatedAction, action.participantes);
+          }, 500);
+        }
+      } else if (hasIncompleteSubtasks && action.estado === 'completado') {
+        // Hay subtareas incompletas y la acción estaba completada → cambiar a en-progreso
+        updatedAction.estado = 'en-progreso';
+        console.log('🔄 Hay subtareas pendientes, cambiando estado a en-progreso');
+      }
+    }
+    
     const updatedLaunch = {
       ...launch,
       acciones: launch.acciones.map(a => 
-        a.id === actionId ? { ...a, ...updates } : a
+        a.id === actionId ? updatedAction : a
       )
     };
     
