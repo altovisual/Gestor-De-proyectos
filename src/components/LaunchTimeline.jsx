@@ -933,7 +933,10 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedLaunch(launch);
+                          setSelectedLaunch({
+                            ...launch,
+                            participantes: launch.participantes || []
+                          });
                           setShowEditLaunch(true);
                         }}
                         className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
@@ -1661,9 +1664,70 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
                   />
                 </div>
 
+                {/* Sección de Participantes */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Participantes del Lanzamiento</label>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedLaunch.participantes?.map((participante) => (
+                        <Badge
+                          key={participante.id}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          <Users className="w-3 h-3" />
+                          {participante.nombre}
+                          <button
+                            onClick={() => {
+                              setSelectedLaunch({
+                                ...selectedLaunch,
+                                participantes: selectedLaunch.participantes.filter(p => p.id !== participante.id)
+                              });
+                            }}
+                            className="ml-1 hover:text-red-600"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <select
+                      onChange={(e) => {
+                        const participante = globalParticipants.find(p => p.id === e.target.value);
+                        if (participante && !selectedLaunch.participantes?.find(p => p.id === participante.id)) {
+                          setSelectedLaunch({
+                            ...selectedLaunch,
+                            participantes: [...(selectedLaunch.participantes || []), participante]
+                          });
+                        }
+                        e.target.value = '';
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Agregar participante...</option>
+                      {globalParticipants
+                        .filter(p => !selectedLaunch.participantes?.find(ap => ap.id === p.id))
+                        .map((participante) => (
+                          <option key={participante.id} value={participante.id}>
+                            {participante.nombre} ({participante.email})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="flex gap-2 pt-4">
                   <Button onClick={() => updateLaunch(selectedLaunch)} className="flex-1">
                     Guardar Cambios
+                  </Button>
+                  <Button 
+                    onClick={(e) => handleSendLaunchReport(selectedLaunch, e)}
+                    variant="outline"
+                    disabled={!selectedLaunch.participantes || selectedLaunch.participantes.length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Enviar Reporte
                   </Button>
                   <Button onClick={() => setShowEditLaunch(false)} variant="outline">
                     Cancelar
