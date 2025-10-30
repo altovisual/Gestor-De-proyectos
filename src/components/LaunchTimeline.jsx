@@ -40,7 +40,8 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
     nombre: '',
     artista: '',
     fechaLanzamiento: '',
-    descripcion: ''
+    descripcion: '',
+    participantes: []
   });
   const [newAction, setNewAction] = useState({
     titulo: '',
@@ -50,8 +51,33 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
     fechaFin: '',
     estado: 'pendiente',
     prioridad: 'media',
-    participantes: []
+    participantes: [],
+    subtareas: []
   });
+  const [newSubtaskForAction, setNewSubtaskForAction] = useState('');
+
+  // Funciones para manejar subtareas en nueva acción
+  const addSubtaskToNewAction = () => {
+    if (newSubtaskForAction.trim()) {
+      const newSubtask = {
+        id: `${Date.now()}-${Math.random()}`,
+        titulo: newSubtaskForAction.trim(),
+        completada: false
+      };
+      setNewAction({
+        ...newAction,
+        subtareas: [...(newAction.subtareas || []), newSubtask]
+      });
+      setNewSubtaskForAction('');
+    }
+  };
+
+  const removeSubtaskFromNewAction = (subtaskId) => {
+    setNewAction({
+      ...newAction,
+      subtareas: newAction.subtareas.filter(st => st.id !== subtaskId)
+    });
+  };
 
   // Fases del lanzamiento musical
   const fases = [
@@ -439,6 +465,11 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
       try {
         await launchesSyncService.saveLaunch(launch);
         console.log('✅ Lanzamiento guardado en Supabase');
+        
+        // Enviar notificaciones a los participantes si los hay
+        if (launch.participantes && launch.participantes.length > 0) {
+          await launchNotificationService.notifyLaunchCreated(launch, launch.participantes);
+        }
       } catch (error) {
         console.error('❌ Error al guardar lanzamiento:', error);
         alert('Error al crear el lanzamiento. Por favor intenta de nuevo.');
@@ -448,7 +479,8 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
         nombre: '',
         artista: '',
         fechaLanzamiento: '',
-        descripcion: ''
+        descripcion: '',
+        participantes: []
       });
       setShowAddLaunch(false);
     } else {
@@ -556,8 +588,10 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
           fechaFin: '',
           estado: 'pendiente',
           prioridad: 'media',
-          participantes: []
+          participantes: [],
+          subtareas: []
         });
+        setNewSubtaskForAction('');
         setShowAddAction(false);
       } catch (error) {
         console.error('❌ Error al agregar acción:', error);
@@ -1231,6 +1265,58 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
                   />
                 </div>
 
+                {/* Sección de Participantes */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Participantes del Lanzamiento</label>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {newLaunch.participantes?.map((participante) => (
+                        <Badge
+                          key={participante.id}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          <Users className="w-3 h-3" />
+                          {participante.nombre}
+                          <button
+                            onClick={() => {
+                              setNewLaunch({
+                                ...newLaunch,
+                                participantes: newLaunch.participantes.filter(p => p.id !== participante.id)
+                              });
+                            }}
+                            className="ml-1 hover:text-red-600"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <select
+                      onChange={(e) => {
+                        const participante = globalParticipants.find(p => p.id === e.target.value);
+                        if (participante && !newLaunch.participantes?.find(p => p.id === participante.id)) {
+                          setNewLaunch({
+                            ...newLaunch,
+                            participantes: [...(newLaunch.participantes || []), participante]
+                          });
+                        }
+                        e.target.value = '';
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Agregar participante...</option>
+                      {globalParticipants
+                        .filter(p => !newLaunch.participantes?.find(ap => ap.id === p.id))
+                        .map((participante) => (
+                          <option key={participante.id} value={participante.id}>
+                            {participante.nombre} ({participante.email})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="flex gap-2 pt-4">
                   <Button onClick={addLaunch} className="flex-1">
                     Crear Lanzamiento
@@ -1365,6 +1451,57 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
                           </option>
                         ))}
                     </select>
+                  </div>
+                </div>
+
+                {/* Sección de Subtareas */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subtareas</label>
+                  <div className="space-y-2">
+                    {/* Lista de subtareas existentes */}
+                    {newAction.subtareas && newAction.subtareas.length > 0 && (
+                      <div className="space-y-1 mb-3">
+                        {newAction.subtareas.map((subtarea) => (
+                          <div
+                            key={subtarea.id}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                          >
+                            <span className="text-sm text-gray-700">{subtarea.titulo}</span>
+                            <button
+                              onClick={() => removeSubtaskFromNewAction(subtarea.id)}
+                              className="p-1 hover:bg-red-100 rounded"
+                            >
+                              <X className="w-3 h-3 text-red-600" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Input para nueva subtarea */}
+                    <div className="flex gap-2">
+                      <Input
+                        value={newSubtaskForAction}
+                        onChange={(e) => setNewSubtaskForAction(e.target.value)}
+                        placeholder="Agregar subtarea..."
+                        className="flex-1 rounded-xl"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addSubtaskToNewAction();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={addSubtaskToNewAction}
+                        variant="outline"
+                        size="sm"
+                        className="px-3"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

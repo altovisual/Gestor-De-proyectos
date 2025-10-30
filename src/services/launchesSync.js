@@ -149,6 +149,7 @@ class LaunchesSyncService {
       artista: launch.artista || '',
       fechaLanzamiento: launch.fecha_lanzamiento,
       descripcion: launch.descripcion || '',
+      participantes: launch.participantes || [],
       acciones: launch.acciones || [],
       fechaCreacion: launch.fecha_creacion
     }));
@@ -164,6 +165,7 @@ class LaunchesSyncService {
       artista: launch.artista || null,
       fecha_lanzamiento: launch.fechaLanzamiento,
       descripcion: launch.descripcion || null,
+      participantes: launch.participantes || [],
       acciones: launch.acciones || [],
       created_by: userEmail || null,
       updated_by: userEmail || null

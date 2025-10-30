@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS lanzamientos (
   artista TEXT,
   fecha_lanzamiento DATE NOT NULL,
   descripcion TEXT,
+  participantes JSONB DEFAULT '[]',
   acciones JSONB DEFAULT '[]',
   fecha_creacion TIMESTAMP DEFAULT NOW(),
   created_by TEXT,

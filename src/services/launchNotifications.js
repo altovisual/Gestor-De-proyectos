@@ -251,6 +251,72 @@ class LaunchNotificationService {
     }
   }
 
+  /**
+   * Notifica a los participantes cuando se crea un nuevo lanzamiento
+   */
+  async notifyLaunchCreated(launch, participants) {
+    if (!participants || participants.length === 0) {
+      console.log('ℹ️ No hay participantes para notificar del nuevo lanzamiento');
+      return;
+    }
+
+    console.log('📧 Enviando notificaciones de nuevo lanzamiento:', {
+      launch: launch.nombre,
+      participants: participants.map(p => p.nombre)
+    });
+
+    const subject = `🎵 Nuevo lanzamiento: ${launch.nombre}`;
+    
+    const body = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">🎵 Nuevo Lanzamiento Musical</h2>
+        
+        <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #1e40af;">🚀 ${launch.nombre}</h3>
+          ${launch.artista ? `<p><strong>Artista:</strong> ${launch.artista}</p>` : ''}
+          <p><strong>Fecha de lanzamiento:</strong> ${new Date(launch.fechaLanzamiento).toLocaleDateString('es-ES', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })}</p>
+          ${launch.descripcion ? `<p><strong>Descripción:</strong> ${launch.descripcion}</p>` : ''}
+        </div>
+
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h4 style="margin-top: 0;">👥 Participantes del Lanzamiento</h4>
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            ${participants.map(p => `<li>${p.nombre} (${p.email})</li>`).join('')}
+          </ul>
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 14px;">
+            Has sido agregado como participante de este nuevo lanzamiento musical. 
+            Pronto recibirás notificaciones sobre las acciones asignadas.
+          </p>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+            Este es un correo automático del sistema de gestión de proyectos.
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      for (const participant of participants) {
+        if (participant.email) {
+          await emailNotificationService.sendEmail(
+            participant.email,
+            subject,
+            body
+          );
+          console.log(`✅ Notificación de lanzamiento enviada a ${participant.nombre} (${participant.email})`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error al enviar notificaciones de lanzamiento:', error);
+    }
+  }
+
   // Métodos auxiliares privados
 
   _getFaseNombre(faseId) {
