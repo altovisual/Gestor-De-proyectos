@@ -842,13 +842,13 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
 
                     {/* Progreso */}
                     <div>
-                      <div className="flex items-center justify-between text-sm mb-1">
+                      <div className="flex items-center justify-between text-sm mb-2">
                         <span className="text-gray-600">Progreso</span>
-                        <span className="font-semibold">{completadas}/{totalAcciones} acciones</span>
+                        <span className="font-semibold text-blue-600">{progress}% ({completadas}/{totalAcciones} acciones)</span>
                       </div>
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 transition-all"
+                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
