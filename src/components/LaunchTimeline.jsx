@@ -1012,6 +1012,22 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
                           {/* Subtareas */}
                           {accion.subtareas && accion.subtareas.length > 0 && (
                             <div className="mt-3 ml-4 space-y-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-medium text-gray-600">Subtareas</span>
+                                <button
+                                  onClick={() => {
+                                    const allCompleted = accion.subtareas.every(st => st.completada);
+                                    const updatedSubtareas = accion.subtareas.map(st => ({
+                                      ...st,
+                                      completada: !allCompleted
+                                    }));
+                                    updateAction(selectedLaunch.id, accion.id, { subtareas: updatedSubtareas });
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                                >
+                                  {accion.subtareas.every(st => st.completada) ? 'Desmarcar todas' : 'Marcar todas'}
+                                </button>
+                              </div>
                               {accion.subtareas.map((subtarea) => (
                                 <div
                                   key={subtarea.id}
