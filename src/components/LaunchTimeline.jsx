@@ -26,8 +26,9 @@ import {
 } from 'lucide-react';
 import { launchExportService } from '../services/launchExport';
 import { launchesSyncService } from '../services/launchesSync';
+import { launchNotificationService } from '../services/launchNotifications';
 
-const LaunchTimeline = ({ launches, setLaunches }) => {
+const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
   const [showAddLaunch, setShowAddLaunch] = useState(false);
   const [selectedLaunch, setSelectedLaunch] = useState(null);
   const [showAddAction, setShowAddAction] = useState(false);
@@ -48,7 +49,8 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
     fechaInicio: '',
     fechaFin: '',
     estado: 'pendiente',
-    prioridad: 'media'
+    prioridad: 'media',
+    participantes: []
   });
 
   // Fases del lanzamiento musical
@@ -535,6 +537,17 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
       try {
         await launchesSyncService.saveLaunch(updatedLaunch);
         setSelectedLaunch(updatedLaunch);
+        
+        // Enviar notificaciones a participantes
+        if (action.participantes && action.participantes.length > 0) {
+          console.log('📧 Enviando notificaciones a participantes:', action.participantes);
+          await launchNotificationService.notifyActionAssignment(
+            selectedLaunch,
+            action,
+            action.participantes
+          );
+        }
+        
         setNewAction({
           titulo: '',
           fase: '',
@@ -542,7 +555,8 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
           fechaInicio: '',
           fechaFin: '',
           estado: 'pendiente',
-          prioridad: 'media'
+          prioridad: 'media',
+          participantes: []
         });
         setShowAddAction(false);
       } catch (error) {
@@ -554,6 +568,9 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
 
   const updateActionStatus = async (launchId, actionId, newStatus) => {
     const launch = launches.find(l => l.id === launchId);
+    const action = launch.acciones.find(a => a.id === actionId);
+    const oldStatus = action.estado;
+    
     const updatedLaunch = {
       ...launch,
       acciones: launch.acciones.map(a => 
@@ -565,6 +582,25 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
       await launchesSyncService.saveLaunch(updatedLaunch);
       if (selectedLaunch?.id === launchId) {
         setSelectedLaunch(updatedLaunch);
+      }
+      
+      // Notificar cambio de estado
+      if (action.participantes && action.participantes.length > 0) {
+        if (newStatus === 'completado') {
+          await launchNotificationService.notifyActionCompleted(
+            launch,
+            { ...action, estado: newStatus },
+            action.participantes
+          );
+        } else {
+          await launchNotificationService.notifyActionStatusChange(
+            launch,
+            { ...action, estado: newStatus },
+            oldStatus,
+            newStatus,
+            action.participantes
+          );
+        }
       }
     } catch (error) {
       console.error('❌ Error al actualizar estado:', error);
@@ -1279,6 +1315,57 @@ const LaunchTimeline = ({ launches, setLaunches }) => {
                     placeholder="Nombre del responsable"
                     className="rounded-xl"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Participantes</label>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {newAction.participantes?.map((participante) => (
+                        <Badge
+                          key={participante.id}
+                          variant="secondary"
+                          className="flex items-center gap-1"
+                        >
+                          <Users className="w-3 h-3" />
+                          {participante.nombre}
+                          <button
+                            onClick={() => {
+                              setNewAction({
+                                ...newAction,
+                                participantes: newAction.participantes.filter(p => p.id !== participante.id)
+                              });
+                            }}
+                            className="ml-1 hover:text-red-600"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <select
+                      onChange={(e) => {
+                        const participante = globalParticipants.find(p => p.id === e.target.value);
+                        if (participante && !newAction.participantes?.find(p => p.id === participante.id)) {
+                          setNewAction({
+                            ...newAction,
+                            participantes: [...(newAction.participantes || []), participante]
+                          });
+                        }
+                        e.target.value = '';
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Agregar participante...</option>
+                      {globalParticipants
+                        .filter(p => !newAction.participantes?.find(ap => ap.id === p.id))
+                        .map((participante) => (
+                          <option key={participante.id} value={participante.id}>
+                            {participante.nombre} ({participante.email})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
