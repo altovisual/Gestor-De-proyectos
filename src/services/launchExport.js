@@ -144,10 +144,17 @@ export const launchExportService = {
   // Métodos privados para crear hojas específicas
   
   _createSummarySheet: (launches) => {
+    const completados = launches.filter(l => launchExportService._calculateProgress(l) === 100).length;
+    const enProgreso = launches.filter(l => {
+      const progress = launchExportService._calculateProgress(l);
+      return progress > 0 && progress < 100;
+    }).length;
+    const pendientes = launches.filter(l => launchExportService._calculateProgress(l) === 0).length;
+    
     const data = [
-      ['REPORTE EJECUTIVO DE LANZAMIENTOS MUSICALES'],
+      ['📊 REPORTE EJECUTIVO DE LANZAMIENTOS MUSICALES'],
       [],
-      ['Fecha de Generación:', new Date().toLocaleDateString('es-ES', { 
+      ['📅 Fecha de Generación:', new Date().toLocaleDateString('es-ES', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric',
@@ -155,16 +162,19 @@ export const launchExportService = {
         minute: '2-digit'
       })],
       [],
-      ['RESUMEN GENERAL'],
-      ['Total de Lanzamientos:', launches.length],
-      ['Lanzamientos Completados:', launches.filter(l => launchExportService._calculateProgress(l) === 100).length],
-      ['Lanzamientos En Progreso:', launches.filter(l => {
-        const progress = launchExportService._calculateProgress(l);
-        return progress > 0 && progress < 100;
-      }).length],
-      ['Lanzamientos Pendientes:', launches.filter(l => launchExportService._calculateProgress(l) === 0).length],
+      ['═══════════════════════════════════════════════════════'],
+      ['📈 RESUMEN GENERAL'],
+      ['═══════════════════════════════════════════════════════'],
       [],
-      ['PRÓXIMOS LANZAMIENTOS (30 días)'],
+      ['📦 Total de Lanzamientos:', launches.length],
+      ['✅ Lanzamientos Completados:', `${completados} (${launches.length > 0 ? Math.round((completados/launches.length)*100) : 0}%)`],
+      ['🔄 Lanzamientos En Progreso:', `${enProgreso} (${launches.length > 0 ? Math.round((enProgreso/launches.length)*100) : 0}%)`],
+      ['⏳ Lanzamientos Pendientes:', `${pendientes} (${launches.length > 0 ? Math.round((pendientes/launches.length)*100) : 0}%)`],
+      [],
+      ['═══════════════════════════════════════════════════════'],
+      ['🎯 PRÓXIMOS LANZAMIENTOS (30 días)'],
+      ['═══════════════════════════════════════════════════════'],
+      [],
     ];
     
     // Agregar próximos lanzamientos
@@ -176,43 +186,77 @@ export const launchExportService = {
     }).sort((a, b) => new Date(a.fechaLanzamiento) - new Date(b.fechaLanzamiento));
     
     if (upcomingLaunches.length > 0) {
-      data.push(['Lanzamiento', 'Artista', 'Fecha', 'Progreso']);
+      data.push(['Lanzamiento', 'Artista', 'Fecha', 'Días Restantes', 'Progreso', 'Estado Visual']);
       upcomingLaunches.forEach(launch => {
+        const diasRestantes = launchExportService._getDaysUntilLaunch(launch.fechaLanzamiento);
+        const progreso = launchExportService._calculateProgress(launch);
+        let estadoVisual = '';
+        
+        if (progreso === 100) {
+          estadoVisual = '✅ LISTO';
+        } else if (progreso >= 75) {
+          estadoVisual = '🟢 AVANZADO';
+        } else if (progreso >= 50) {
+          estadoVisual = '🟡 EN PROGRESO';
+        } else if (progreso >= 25) {
+          estadoVisual = '🟠 INICIANDO';
+        } else {
+          estadoVisual = '🔴 PENDIENTE';
+        }
+        
         data.push([
           launch.nombre,
-          launch.artista || '',
+          launch.artista || 'Sin artista',
           new Date(launch.fechaLanzamiento).toLocaleDateString('es-ES'),
-          `${launchExportService._calculateProgress(launch)}%`
+          diasRestantes >= 0 ? `${diasRestantes} días` : 'Ya lanzado',
+          `${progreso}%`,
+          estadoVisual
         ]);
       });
     } else {
-      data.push(['No hay lanzamientos programados en los próximos 30 días']);
+      data.push(['ℹ️ No hay lanzamientos programados en los próximos 30 días']);
     }
     
     data.push([]);
-    data.push(['ESTADO GENERAL DE ACCIONES']);
+    data.push(['═══════════════════════════════════════════════════════']);
+    data.push(['📋 ESTADO GENERAL DE ACCIONES']);
+    data.push(['═══════════════════════════════════════════════════════']);
+    data.push([]);
     
     const allActions = launches.flatMap(l => l.acciones || []);
-    data.push(['Total de Acciones:', allActions.length]);
-    data.push(['Completadas:', allActions.filter(a => a.estado === 'completado').length]);
-    data.push(['En Progreso:', allActions.filter(a => a.estado === 'en-progreso').length]);
-    data.push(['Pendientes:', allActions.filter(a => a.estado === 'pendiente').length]);
-    data.push(['Retrasadas:', allActions.filter(a => a.estado === 'retrasado').length]);
+    const completadasAcc = allActions.filter(a => a.estado === 'completado').length;
+    const enProgresoAcc = allActions.filter(a => a.estado === 'en-progreso').length;
+    const pendientesAcc = allActions.filter(a => a.estado === 'pendiente').length;
+    const retrasadasAcc = allActions.filter(a => a.estado === 'retrasado').length;
+    
+    data.push(['📊 Total de Acciones:', allActions.length]);
+    data.push(['✅ Completadas:', `${completadasAcc} (${allActions.length > 0 ? Math.round((completadasAcc/allActions.length)*100) : 0}%)`]);
+    data.push(['🔄 En Progreso:', `${enProgresoAcc} (${allActions.length > 0 ? Math.round((enProgresoAcc/allActions.length)*100) : 0}%)`]);
+    data.push(['⏳ Pendientes:', `${pendientesAcc} (${allActions.length > 0 ? Math.round((pendientesAcc/allActions.length)*100) : 0}%)`]);
+    data.push(['⚠️ Retrasadas:', `${retrasadasAcc} (${allActions.length > 0 ? Math.round((retrasadasAcc/allActions.length)*100) : 0}%)`]);
     
     data.push([]);
-    data.push(['DISTRIBUCIÓN POR PRIORIDAD']);
-    data.push(['Alta:', allActions.filter(a => a.prioridad === 'alta').length]);
-    data.push(['Media:', allActions.filter(a => a.prioridad === 'media').length]);
-    data.push(['Baja:', allActions.filter(a => a.prioridad === 'baja').length]);
+    data.push(['═══════════════════════════════════════════════════════']);
+    data.push(['🎯 DISTRIBUCIÓN POR PRIORIDAD']);
+    data.push(['═══════════════════════════════════════════════════════']);
+    data.push([]);
+    
+    const altaPrio = allActions.filter(a => a.prioridad === 'alta').length;
+    const mediaPrio = allActions.filter(a => a.prioridad === 'media').length;
+    const bajaPrio = allActions.filter(a => a.prioridad === 'baja').length;
+    
+    data.push(['🔴 Alta:', `${altaPrio} (${allActions.length > 0 ? Math.round((altaPrio/allActions.length)*100) : 0}%)`]);
+    data.push(['🟡 Media:', `${mediaPrio} (${allActions.length > 0 ? Math.round((mediaPrio/allActions.length)*100) : 0}%)`]);
+    data.push(['🟢 Baja:', `${bajaPrio} (${allActions.length > 0 ? Math.round((bajaPrio/allActions.length)*100) : 0}%)`]);
     
     return data;
   },
 
   _createTimelineSheet: (launches) => {
     const data = [
-      ['CRONOGRAMA GENERAL DE LANZAMIENTOS'],
+      ['📅 CRONOGRAMA GENERAL DE LANZAMIENTOS'],
       [],
-      ['Lanzamiento', 'Artista', 'Fecha', 'Días Restantes', 'Progreso', 'Estado', 'Descripción']
+      ['Lanzamiento', 'Artista', 'Fecha', 'Días Restantes', 'Progreso', 'Estado Visual', 'Acciones', 'Completadas']
     ];
     
     const sortedLaunches = [...launches].sort((a, b) => 
@@ -222,26 +266,41 @@ export const launchExportService = {
     sortedLaunches.forEach(launch => {
       const daysUntil = launchExportService._getDaysUntilLaunch(launch.fechaLanzamiento);
       const progress = launchExportService._calculateProgress(launch);
-      let status = 'Pendiente';
+      const totalAcciones = launch.acciones?.length || 0;
+      const completadas = launch.acciones?.filter(a => a.estado === 'completado').length || 0;
       
-      if (progress === 100) {
-        status = 'Completado';
-      } else if (progress > 0) {
-        status = 'En Progreso';
-      }
+      let estadoVisual = '';
       
       if (daysUntil < 0) {
-        status = 'Lanzado';
+        estadoVisual = '🎉 LANZADO';
+      } else if (progress === 100) {
+        estadoVisual = '✅ COMPLETADO';
+      } else if (progress >= 75) {
+        estadoVisual = '🟢 AVANZADO';
+      } else if (progress >= 50) {
+        estadoVisual = '🟡 EN PROGRESO';
+      } else if (progress >= 25) {
+        estadoVisual = '🟠 INICIANDO';
+      } else if (progress > 0) {
+        estadoVisual = '🔵 COMENZADO';
+      } else {
+        estadoVisual = '⏳ PENDIENTE';
+      }
+      
+      // Agregar alerta si está cerca y no está listo
+      if (daysUntil >= 0 && daysUntil <= 7 && progress < 100) {
+        estadoVisual = '⚠️ URGENTE - ' + estadoVisual;
       }
       
       data.push([
         launch.nombre,
-        launch.artista || '',
+        launch.artista || 'Sin artista',
         new Date(launch.fechaLanzamiento).toLocaleDateString('es-ES'),
-        daysUntil >= 0 ? daysUntil : 'Lanzado',
+        daysUntil >= 0 ? `${daysUntil} días` : `Hace ${Math.abs(daysUntil)} días`,
         `${progress}%`,
-        status,
-        launch.descripcion || ''
+        estadoVisual,
+        totalAcciones,
+        `${completadas}/${totalAcciones}`
       ]);
     });
     
@@ -261,46 +320,71 @@ export const launchExportService = {
     ];
     
     const fases = [
-      { id: 'pre-produccion', nombre: 'Pre-producción' },
-      { id: 'produccion', nombre: 'Producción' },
-      { id: 'pre-lanzamiento', nombre: 'Pre-lanzamiento' },
-      { id: 'lanzamiento', nombre: 'Lanzamiento' },
-      { id: 'post-lanzamiento', nombre: 'Post-lanzamiento' }
+      { id: 'pre-produccion', nombre: '🎵 PRE-PRODUCCIÓN', emoji: '🎵' },
+      { id: 'produccion', nombre: '🎙️ PRODUCCIÓN', emoji: '🎙️' },
+      { id: 'pre-lanzamiento', nombre: '📢 PRE-LANZAMIENTO', emoji: '📢' },
+      { id: 'lanzamiento', nombre: '🚀 LANZAMIENTO', emoji: '🚀' },
+      { id: 'post-lanzamiento', nombre: '📈 POST-LANZAMIENTO', emoji: '📈' }
     ];
     
     fases.forEach(fase => {
       const accionesFase = (launch.acciones || []).filter(a => a.fase === fase.id);
       
       if (accionesFase.length > 0) {
-        data.push([`FASE: ${fase.nombre.toUpperCase()}`]);
-        data.push(['Acción', 'Responsable', 'Fecha Inicio', 'Fecha Fin', 'Estado', 'Prioridad']);
+        const completadas = accionesFase.filter(a => a.estado === 'completado').length;
+        const total = accionesFase.length;
+        const progreso = Math.round((completadas / total) * 100);
+        
+        data.push([`${fase.nombre} - ${completadas}/${total} (${progreso}%)`]);
+        data.push(['Acción', 'Responsable', 'Fecha Inicio', 'Fecha Fin', 'Estado', 'Progreso Subtareas']);
         
         accionesFase.forEach(accion => {
+          // Calcular progreso de subtareas
+          const totalSubtareas = accion.subtareas?.length || 0;
+          const completadasSubtareas = accion.subtareas?.filter(st => st.completada).length || 0;
+          const progresoSubtareas = totalSubtareas > 0 
+            ? `${completadasSubtareas}/${totalSubtareas}` 
+            : 'N/A';
+          
+          // Símbolo de estado
+          let estadoVisual = '';
+          switch(accion.estado) {
+            case 'completado': estadoVisual = '✅ COMPLETADO'; break;
+            case 'en-progreso': estadoVisual = '🔄 EN PROGRESO'; break;
+            case 'retrasado': estadoVisual = '⚠️ RETRASADO'; break;
+            default: estadoVisual = '⏳ PENDIENTE';
+          }
+          
           data.push([
             accion.titulo,
-            accion.responsable || '',
-            accion.fechaInicio ? new Date(accion.fechaInicio).toLocaleDateString('es-ES') : '',
-            accion.fechaFin ? new Date(accion.fechaFin).toLocaleDateString('es-ES') : '',
-            accion.estado,
-            accion.prioridad || ''
+            accion.responsable || 'Sin asignar',
+            accion.fechaInicio ? new Date(accion.fechaInicio).toLocaleDateString('es-ES') : 'Sin fecha',
+            accion.fechaFin ? new Date(accion.fechaFin).toLocaleDateString('es-ES') : 'Sin fecha',
+            estadoVisual,
+            progresoSubtareas
           ]);
           
           // Agregar subtareas si existen
           if (accion.subtareas && accion.subtareas.length > 0) {
-            accion.subtareas.forEach(subtarea => {
+            data.push(['SUBTAREAS:', '', '', '', '', '']);
+            accion.subtareas.forEach((subtarea, index) => {
+              const simbolo = subtarea.completada ? '✅' : '⬜';
+              const estado = subtarea.completada ? 'COMPLETADA' : 'PENDIENTE';
               data.push([
-                `  ✓ ${subtarea.titulo}`,
+                `   ${simbolo} ${index + 1}. ${subtarea.titulo}`,
                 '',
                 '',
                 '',
-                subtarea.completada ? 'Completada' : 'Pendiente',
+                estado,
                 ''
               ]);
             });
+            data.push(['']); // Línea en blanco después de subtareas
           }
         });
         
         data.push([]);
+        data.push(['']); // Línea extra entre fases
       }
     });
     
