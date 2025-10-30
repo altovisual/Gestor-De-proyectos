@@ -452,7 +452,8 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
   };
 
   const addLaunch = async () => {
-    console.log('addLaunch called', newLaunch);
+    console.log('🚀 addLaunch called', newLaunch);
+    console.log('📋 Participantes en newLaunch:', newLaunch.participantes);
     if (newLaunch.nombre && newLaunch.fechaLanzamiento) {
       const launch = {
         id: Date.now().toString(),
@@ -460,7 +461,8 @@ const LaunchTimeline = ({ launches, setLaunches, globalParticipants = [] }) => {
         acciones: [],
         fechaCreacion: new Date().toISOString()
       };
-      console.log('Creating launch:', launch);
+      console.log('🎵 Creating launch:', launch);
+      console.log('👥 Participantes en launch final:', launch.participantes);
       
       try {
         await launchesSyncService.saveLaunch(launch);

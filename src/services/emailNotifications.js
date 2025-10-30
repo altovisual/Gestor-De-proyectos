@@ -259,6 +259,15 @@ class EmailNotificationService {
       throw new Error('No hay token de acceso. Por favor, autoriza la aplicación.');
     }
 
+    // Validar email
+    if (!to || typeof to !== 'string' || !to.includes('@')) {
+      console.error('❌ Email inválido:', to);
+      throw new Error('Invalid To header');
+    }
+
+    console.log('📧 Enviando email a:', to);
+    console.log('📧 Asunto:', subject);
+
     try {
       // Crear el mensaje en formato RFC 2822
       const email = [

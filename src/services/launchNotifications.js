@@ -303,6 +303,9 @@ class LaunchNotificationService {
 
     try {
       for (const participant of participants) {
+        console.log('👤 Procesando participante:', participant);
+        console.log('📧 Email del participante:', participant.email);
+        
         if (participant.email) {
           await emailNotificationService.sendEmail(
             participant.email,
@@ -310,6 +313,8 @@ class LaunchNotificationService {
             body
           );
           console.log(`✅ Notificación de lanzamiento enviada a ${participant.nombre} (${participant.email})`);
+        } else {
+          console.log(`⚠️ Participante ${participant.nombre} no tiene email`);
         }
       }
     } catch (error) {
