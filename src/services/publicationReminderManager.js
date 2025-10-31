@@ -17,6 +17,12 @@ class PublicationReminderManager {
    * Inicia el sistema de recordatorios automáticos para publicaciones
    */
   startAutomaticReminders(publications, participants) {
+    // Validar que los parámetros sean válidos
+    if (!publications || !Array.isArray(publications) || !participants || !Array.isArray(participants)) {
+      secureLogger.debug('Parámetros inválidos para recordatorios automáticos, omitiendo inicio');
+      return;
+    }
+
     // Limpiar intervalo anterior si existe
     if (this.reminderInterval) {
       clearInterval(this.reminderInterval);
@@ -43,8 +49,13 @@ class PublicationReminderManager {
       return;
     }
 
-    if (!publications || publications.length === 0) {
+    if (!publications || !Array.isArray(publications) || publications.length === 0) {
       secureLogger.debug('No hay publicaciones para verificar recordatorios');
+      return;
+    }
+
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+      secureLogger.debug('No hay participantes para enviar recordatorios');
       return;
     }
 
@@ -93,10 +104,26 @@ class PublicationReminderManager {
    * Envía recordatorios automáticos para publicaciones próximas
    */
   async sendAutomaticReminders(publications, participants) {
+    if (!publications || !Array.isArray(publications) || publications.length === 0) {
+      secureLogger.debug('No hay publicaciones para enviar recordatorios');
+      return;
+    }
+
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+      secureLogger.debug('No hay participantes para enviar recordatorios');
+      return;
+    }
+
     secureLogger.sync(`Enviando recordatorios automáticos para ${publications.length} publicaciones`);
 
     for (const publication of publications) {
       try {
+        // Validar que la publicación tenga los campos necesarios
+        if (!publication || !publication.titulo) {
+          secureLogger.debug('Publicación inválida, omitiendo');
+          continue;
+        }
+
         // Obtener responsables de esta publicación
         const responsables = publication.responsables || [];
         
@@ -107,7 +134,7 @@ class PublicationReminderManager {
 
         // Buscar participantes responsables
         const responsibleParticipants = participants.filter(p => 
-          responsables.includes(p.nombre || p.name || p)
+          p && (p.nombre || p.name || p) && responsables.includes(p.nombre || p.name || p)
         );
 
         if (responsibleParticipants.length === 0) {

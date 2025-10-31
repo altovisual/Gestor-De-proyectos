@@ -895,19 +895,21 @@ const PublicationCalendar = ({
 
   // Funciones para manejar múltiples responsables
   const addResponsable = () => {
-    if (newResponsable && !newPublication.responsables.includes(newResponsable)) {
+    const currentResponsables = newPublication.responsables || [];
+    if (newResponsable && !currentResponsables.includes(newResponsable)) {
       setNewPublication({
         ...newPublication,
-        responsables: [...newPublication.responsables, newResponsable]
+        responsables: [...currentResponsables, newResponsable]
       });
       setNewResponsable('');
     }
   };
 
   const removeResponsable = (responsableToRemove) => {
+    const currentResponsables = newPublication.responsables || [];
     setNewPublication({
       ...newPublication,
-      responsables: newPublication.responsables.filter(r => r !== responsableToRemove)
+      responsables: currentResponsables.filter(r => r !== responsableToRemove)
     });
   };
 
@@ -1337,7 +1339,7 @@ const PublicationCalendar = ({
                     <label className="block text-sm font-medium mb-2">Responsables</label>
                     
                     {/* Mostrar responsables actuales */}
-                    {newPublication.responsables.length > 0 && (
+                    {newPublication.responsables && newPublication.responsables.length > 0 && (
                       <div className="flex flex-wrap gap-2 mb-2">
                         {newPublication.responsables.map((responsable, index) => (
                           <Badge 
@@ -1365,7 +1367,7 @@ const PublicationCalendar = ({
                       >
                         <option value="">Seleccionar responsable</option>
                         {globalParticipants
-                          .filter(participant => !newPublication.responsables.includes(participant.nombre))
+                          .filter(participant => !(newPublication.responsables || []).includes(participant.nombre))
                           .map(participant => (
                             <option key={participant.id} value={participant.nombre}>
                               {participant.nombre}
