@@ -214,6 +214,31 @@ class PublicationsSyncService {
   }
 
   /**
+   * Eliminar TODAS las publicaciones (función de emergencia)
+   */
+  async deleteAllPublications() {
+    try {
+      secureLogger.debug('=== ELIMINACIÓN FORZADA DE TODAS LAS PUBLICACIONES ===');
+      
+      const { data, error } = await supabase
+        .from('publicaciones')
+        .delete()
+        .neq('id', 'never_exists'); // Esto elimina todo
+
+      if (error) {
+        secureLogger.error('Error eliminando todas las publicaciones:', error);
+        throw error;
+      }
+
+      secureLogger.sync('Todas las publicaciones eliminadas exitosamente');
+      return data;
+    } catch (error) {
+      secureLogger.error('Error en eliminación forzada:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Verificar si la tabla publicaciones existe y está configurada correctamente
    */
   async checkTableStatus() {

@@ -966,6 +966,26 @@ const PublicationCalendar = ({
     }
   };
 
+  // Eliminar todas las publicaciones (función de emergencia)
+  const deleteAllPublications = async () => {
+    if (!confirm('⚠️ ADVERTENCIA: Esto eliminará TODAS las publicaciones.\n\n¿Estás seguro de que quieres continuar?')) {
+      return;
+    }
+
+    try {
+      await publicationsSyncService.deleteAllPublications();
+      
+      // Limpiar estado local
+      setPublications([]);
+      savePublications([]);
+      
+      alert('✅ Todas las publicaciones han sido eliminadas exitosamente');
+    } catch (error) {
+      secureLogger.error('Error eliminando todas las publicaciones:', error);
+      alert(`❌ Error: ${error.message}`);
+    }
+  };
+
   // Enviar recordatorios de publicaciones próximas
   const sendUpcomingReminders = async () => {
     try {
@@ -1099,6 +1119,15 @@ const PublicationCalendar = ({
             >
               <Settings className="w-4 h-4 mr-2" />
               Diagnóstico
+            </Button>
+            <Button
+              onClick={deleteAllPublications}
+              variant="outline"
+              className="border-red-800 text-red-800 hover:bg-red-100"
+              title="⚠️ Eliminar TODAS las publicaciones"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Limpiar Todo
             </Button>
           </div>
         </div>
