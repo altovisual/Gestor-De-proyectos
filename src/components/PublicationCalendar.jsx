@@ -162,7 +162,7 @@ const PublicationCalendar = ({
     fase: 'pre-lanzamiento',
     plataforma: 'Instagram',
     tipoContenido: 'Post',
-    responsable: '',
+    responsables: [], // Cambiado a array para múltiples responsables
     estado: 'planificado',
     launchId: '',
     objetivos: '',
@@ -170,6 +170,9 @@ const PublicationCalendar = ({
     hashtags: '',
     notas: ''
   });
+
+  // Estado para manejar la adición de responsables
+  const [newResponsable, setNewResponsable] = useState('');
 
   // Fases de lanzamiento musical según la estrategia proporcionada
   const fases = [
@@ -808,28 +811,28 @@ const PublicationCalendar = ({
       await savePublicationToSupabase(publication);
     }
 
-    // Enviar notificaciones si hay un responsable asignado
-    if (publication.responsable && isNewPublication) {
+    // Enviar notificaciones si hay responsables asignados
+    if (publication.responsables && publication.responsables.length > 0 && isNewPublication) {
       try {
-        // Buscar el participante responsable
-        const responsibleParticipant = globalParticipants.find(p => 
-          (p.nombre || p.name || p) === publication.responsable
+        // Buscar todos los participantes responsables
+        const responsibleParticipants = globalParticipants.filter(p => 
+          publication.responsables.includes(p.nombre || p.name || p)
         );
 
-        if (responsibleParticipant) {
+        if (responsibleParticipants.length > 0) {
           // Buscar el lanzamiento asociado si existe
           const associatedLaunch = publication.launchId ? 
             launches.find(l => l.id === publication.launchId) : null;
 
-          // Enviar notificación
+          // Enviar notificación a todos los responsables
           const result = await publicationNotificationService.notifyPublicationAssignment(
             publication,
-            [responsibleParticipant],
+            responsibleParticipants,
             associatedLaunch
           );
 
           if (result.success) {
-            console.log('✅ Notificación enviada al responsable de la publicación');
+            secureLogger.sync(`Notificaciones enviadas a ${responsibleParticipants.length} responsables`);
           } else {
             console.warn('⚠️ No se pudo enviar notificación:', result.message);
             // Mostrar mensaje al usuario si no está autenticado
@@ -838,7 +841,7 @@ const PublicationCalendar = ({
             }
           }
         } else {
-          console.warn('⚠️ No se encontró el participante responsable para enviar notificación');
+          console.warn('⚠️ No se encontraron participantes responsables para enviar notificación');
         }
       } catch (error) {
         console.error('❌ Error enviando notificación de publicación:', error);
@@ -855,7 +858,7 @@ const PublicationCalendar = ({
       fase: 'pre-lanzamiento',
       plataforma: 'Instagram',
       tipoContenido: 'Post',
-      responsable: '',
+      responsables: [], // Resetear como array vacío
       estado: 'planificado',
       launchId: '',
       objetivos: '',
@@ -863,6 +866,7 @@ const PublicationCalendar = ({
       hashtags: '',
       notas: ''
     });
+    setNewResponsable(''); // Resetear el campo de nuevo responsable
     setShowAddPublication(false);
   };
 
@@ -876,6 +880,31 @@ const PublicationCalendar = ({
       objetivos: template.objetivos,
       hashtags: template.hashtags
     });
+  };
+
+  // Funciones para manejar múltiples responsables
+  const addResponsable = () => {
+    if (newResponsable && !newPublication.responsables.includes(newResponsable)) {
+      setNewPublication({
+        ...newPublication,
+        responsables: [...newPublication.responsables, newResponsable]
+      });
+      setNewResponsable('');
+    }
+  };
+
+  const removeResponsable = (responsableToRemove) => {
+    setNewPublication({
+      ...newPublication,
+      responsables: newPublication.responsables.filter(r => r !== responsableToRemove)
+    });
+  };
+
+  const handleResponsableKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addResponsable();
+    }
   };
 
   // Exportar calendario a Excel usando el servicio
@@ -1293,19 +1322,53 @@ const PublicationCalendar = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Responsable</label>
-                    <select
-                      value={newPublication.responsable}
-                      onChange={(e) => setNewPublication({...newPublication, responsable: e.target.value})}
-                      className="w-full p-2 border rounded-md"
-                    >
-                      <option value="">Seleccionar responsable</option>
-                      {globalParticipants.map(participant => (
-                        <option key={participant.id} value={participant.nombre}>
-                          {participant.nombre}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-medium mb-2">Responsables</label>
+                    
+                    {/* Mostrar responsables actuales */}
+                    {newPublication.responsables.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {newPublication.responsables.map((responsable, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary" 
+                            className="flex items-center gap-1 px-2 py-1"
+                          >
+                            <Users className="w-3 h-3" />
+                            {responsable}
+                            <X 
+                              className="w-3 h-3 cursor-pointer hover:text-red-600" 
+                              onClick={() => removeResponsable(responsable)}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Agregar nuevo responsable */}
+                    <div className="flex gap-2">
+                      <select
+                        value={newResponsable}
+                        onChange={(e) => setNewResponsable(e.target.value)}
+                        className="flex-1 p-2 border rounded-md"
+                      >
+                        <option value="">Seleccionar responsable</option>
+                        {globalParticipants
+                          .filter(participant => !newPublication.responsables.includes(participant.nombre))
+                          .map(participant => (
+                            <option key={participant.id} value={participant.nombre}>
+                              {participant.nombre}
+                            </option>
+                          ))}
+                      </select>
+                      <Button
+                        type="button"
+                        onClick={addResponsable}
+                        disabled={!newResponsable}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Lanzamiento Asociado</label>
@@ -1568,8 +1631,23 @@ const PublicationCalendar = ({
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Responsable</label>
-                    <p className="text-sm text-gray-900">{selectedPublication.responsable || 'Sin asignar'}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Responsables</label>
+                    {selectedPublication.responsables && selectedPublication.responsables.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPublication.responsables.map((responsable, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary" 
+                            className="flex items-center gap-1 px-2 py-1"
+                          >
+                            <Users className="w-3 h-3" />
+                            {responsable}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Sin responsables asignados</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Lanzamiento Asociado</label>

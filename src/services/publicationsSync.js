@@ -87,6 +87,7 @@ class PublicationsSyncService {
         estado: pub.estado || 'pendiente',
         lanzamiento_id: pub.lanzamiento_id,
         participantes: pub.participantes || [],
+        responsables: pub.participantes || [], // Mapear participantes a responsables para compatibilidad
         contenido: pub.contenido || '',
         hashtags: pub.hashtags || [],
         created_at: pub.created_at,
@@ -121,7 +122,7 @@ class PublicationsSyncService {
         tipo: publication.tipo || publication.tipoContenido || 'Post', // Mapear tipoContenido a tipo
         estado: publication.estado || 'pendiente',
         lanzamiento_id: publication.lanzamiento_id,
-        participantes: publication.participantes || [],
+        participantes: publication.participantes || publication.responsables || [], // Mapear responsables a participantes
         contenido: publication.contenido || '',
         hashtags: publication.hashtags || [],
         updated_at: new Date().toISOString()
