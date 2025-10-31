@@ -1102,10 +1102,13 @@ const PublicationCalendar = ({
       );
 
       if (result.success) {
-        alert(`✅ Recordatorios enviados a ${responsibleParticipants.length} participante(s) sobre ${upcomingPublications.length} publicación(es) próxima(s).`);
+        const detailMessage = result.details 
+          ? `\n\n📊 Detalles: ${result.details.sent} enviados, ${result.details.failed} fallaron`
+          : '';
+        alert(`✅ ${result.message}${detailMessage}`);
         console.log('✅ Recordatorios de publicaciones próximas enviados');
       } else {
-        alert(`⚠️ ${result.message}`);
+        alert(`⚠️ ${result.message}\n\n💡 Tip: Si ves errores 401, es normal. Algunos emails pueden haberse enviado correctamente.`);
         console.warn('⚠️ No se pudieron enviar recordatorios:', result.message);
       }
     } catch (error) {

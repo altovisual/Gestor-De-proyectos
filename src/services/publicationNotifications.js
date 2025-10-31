@@ -301,6 +301,10 @@ class PublicationNotificationService {
     `;
 
     // Enviar recordatorio a cada participante
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
     for (const participant of participants) {
       const email = participant.email || participant.correo;
       const name = participant.nombre || participant.name || participant;
@@ -309,13 +313,33 @@ class PublicationNotificationService {
         try {
           await emailNotificationService.sendEmail(email, subject, body);
           console.log(`✅ Recordatorio enviado a ${name} (${email})`);
+          successCount++;
         } catch (error) {
-          console.error(`❌ Error enviando recordatorio a ${name}:`, error);
+          console.error(`❌ Error enviando recordatorio a ${email}:`, error.message);
+          errorCount++;
+          
+          // Solo mostrar errores críticos, no los 401 (token expirado)
+          if (!error.message.includes('authentication credentials')) {
+            errors.push(`${name}: ${error.message}`);
+          }
         }
       }
     }
     
-    return { success: true, message: 'Recordatorios enviados exitosamente' };
+    const totalAttempts = successCount + errorCount;
+    const message = successCount > 0 
+      ? `${successCount}/${totalAttempts} recordatorios enviados exitosamente` 
+      : 'No se pudieron enviar recordatorios. Verifica tu autenticación con Google.';
+    
+    return { 
+      success: successCount > 0, 
+      message,
+      details: {
+        sent: successCount,
+        failed: errorCount,
+        errors: errors
+      }
+    };
   }
 
   /**
