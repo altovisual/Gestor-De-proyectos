@@ -1070,13 +1070,28 @@ const PublicationCalendar = ({
       }
 
       // Obtener todos los participantes únicos de las publicaciones próximas
-      const responsibleParticipants = [...new Set(upcomingPublications.map(pub => pub.responsable))]
-        .filter(responsable => responsable)
+      const allResponsables = upcomingPublications
+        .flatMap(pub => pub.responsables || []) // Usar responsables (plural) y aplanar el array
+        .filter(responsable => responsable); // Filtrar valores vacíos
+        
+      const uniqueResponsables = [...new Set(allResponsables)]; // Eliminar duplicados
+      
+      const responsibleParticipants = uniqueResponsables
         .map(responsable => globalParticipants.find(p => (p.nombre || p.name || p) === responsable))
-        .filter(participant => participant);
+        .filter(participant => participant && participant.email); // Asegurar que tengan email
 
+      // Debug: Mostrar información detallada
+      console.log('🔍 Debug recordatorios:');
+      console.log('- Publicaciones próximas:', upcomingPublications.length);
+      console.log('- Responsables encontrados:', uniqueResponsables);
+      console.log('- Participantes con email:', responsibleParticipants.map(p => p.email));
+      
       if (responsibleParticipants.length === 0) {
-        alert('No hay participantes con email para enviar recordatorios.');
+        const debugMessage = uniqueResponsables.length > 0 
+          ? `Se encontraron responsables (${uniqueResponsables.join(', ')}) pero ninguno tiene email registrado en participantes.`
+          : 'No se encontraron responsables asignados a las publicaciones próximas.';
+          
+        alert(`No hay participantes con email para enviar recordatorios.\n\n${debugMessage}`);
         return;
       }
 
