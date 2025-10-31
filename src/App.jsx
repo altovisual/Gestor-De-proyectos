@@ -17,6 +17,7 @@ import { taskNotificationManager } from './services/taskNotificationManager';
 import { realtimeSyncService } from './services/realtimeSync';
 import { participantsSyncService } from './services/participantsSync';
 import { launchesSyncService } from './services/launchesSync';
+import { publicationsSyncService } from './services/publicationsSync';
 import { googleCalendarService } from './services/googleCalendar';
 import { secureLogger } from './utils/secureLogger';
 
@@ -39,6 +40,7 @@ function App() {
   });
   const [newParticipant, setNewParticipant] = useState('');
   const [globalParticipants, setGlobalParticipants] = useState([]);
+  const [publications, setPublications] = useState([]);
   const [showParticipantsManager, setShowParticipantsManager] = useState(false);
   const [newGlobalParticipant, setNewGlobalParticipant] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -64,7 +66,6 @@ function App() {
   const [ideas, setIdeas] = useState([]);
   const [showIdeas, setShowIdeas] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [publications, setPublications] = useState([]);
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [userEmail, setUserEmail] = useState('');
@@ -250,10 +251,35 @@ function App() {
     };
     
     initializeLaunches();
+
+    // Inicializar publicaciones
+    const initializePublications = async () => {
+      // Migrar publicaciones locales si existen
+      const localPublications = localStorage.getItem('publicationCalendar');
+      if (localPublications) {
+        const publications = JSON.parse(localPublications);
+        if (publications.length > 0) {
+          secureLogger.sync('Detectadas publicaciones locales, migrando automáticamente...');
+          await publicationsSyncService.migrateFromLocalStorage();
+        }
+      }
+      
+      // Iniciar sincronización en tiempo real
+      publicationsSyncService.startSync((updatedPublications) => {
+        secureLogger.sync('Publicaciones actualizadas desde Supabase:', updatedPublications.length);
+        setPublications(updatedPublications);
+        
+        // También guardar en localStorage como backup
+        localStorage.setItem('publicationCalendar', JSON.stringify(updatedPublications));
+      });
+    };
+    
+    initializePublications();
     
     // Limpiar al desmontar
     return () => {
       launchesSyncService.stopSync();
+      publicationsSyncService.stopSync();
     };
   }, []);
 

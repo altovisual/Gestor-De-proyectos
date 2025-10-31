@@ -28,6 +28,8 @@ import {
 import * as XLSX from 'xlsx';
 import { publicationCalendarExportService } from '../services/publicationCalendarExport';
 import { publicationNotificationService } from '../services/publicationNotifications';
+import { publicationsSyncService } from '../services/publicationsSync';
+import { secureLogger } from '../utils/secureLogger';
 
 const PublicationCalendar = ({ 
   launches = [], 
@@ -610,11 +612,31 @@ const PublicationCalendar = ({
   }, [setExternalPublications]);
 
   // Guardar publicaciones
-  const savePublications = (newPublications) => {
+  const savePublications = async (newPublications) => {
     setPublications(newPublications);
     // Solo guardar en localStorage si estamos usando estado local
     if (!setExternalPublications) {
       localStorage.setItem('publicationCalendar', JSON.stringify(newPublications));
+    }
+  };
+
+  // Guardar publicación individual en Supabase
+  const savePublicationToSupabase = async (publication) => {
+    try {
+      await publicationsSyncService.savePublication(publication);
+      secureLogger.sync('Publicación guardada exitosamente');
+    } catch (error) {
+      secureLogger.error('Error al guardar publicación:', error);
+    }
+  };
+
+  // Eliminar publicación de Supabase
+  const deletePublicationFromSupabase = async (publicationId) => {
+    try {
+      await publicationsSyncService.deletePublication(publicationId);
+      secureLogger.sync('Publicación eliminada exitosamente');
+    } catch (error) {
+      secureLogger.error('Error al eliminar publicación:', error);
     }
   };
 
@@ -681,10 +703,13 @@ const PublicationCalendar = ({
   };
 
   // Eliminar publicación
-  const handleDeletePublication = (publicationId) => {
+  const handleDeletePublication = async (publicationId) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
       const updatedPublications = publications.filter(pub => pub.id !== publicationId);
       savePublications(updatedPublications);
+      
+      // Eliminar de Supabase
+      await deletePublicationFromSupabase(publicationId);
       setShowPublicationDetails(false);
     }
   };
@@ -764,6 +789,9 @@ const PublicationCalendar = ({
       );
       savePublications(updatedPublications);
       publication = newPublication;
+      
+      // Guardar en Supabase
+      await savePublicationToSupabase(publication);
     } else {
       // Si es nueva, crear una nueva publicación
       publication = {
@@ -775,6 +803,9 @@ const PublicationCalendar = ({
       const updatedPublications = [...publications, publication];
       savePublications(updatedPublications);
       isNewPublication = true;
+      
+      // Guardar en Supabase
+      await savePublicationToSupabase(publication);
     }
 
     // Enviar notificaciones si hay un responsable asignado
