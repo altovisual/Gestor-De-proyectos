@@ -4,9 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import { Bell, Mail, Calendar, CheckCircle, XCircle, Loader, Send } from 'lucide-react';
+import { Bell, Mail, Calendar, CheckCircle, XCircle, Loader, Send, Clock } from 'lucide-react';
 import { useGoogleIntegration } from '../hooks/useGoogleIntegration';
 import { taskNotificationManager } from '../services/taskNotificationManager';
+import { publicationReminderManager } from '../services/publicationReminderManager';
 
 export function NotificationStatus({ tasks }) {
   const { isAuthenticated } = useGoogleIntegration();
@@ -186,6 +187,27 @@ export function NotificationStatus({ tasks }) {
             </p>
             <p className="text-sm text-gray-600">
               Las tareas se sincronizan automáticamente con Google Calendar
+            </p>
+          </div>
+        </div>
+
+        {/* Estado de recordatorios automáticos de publicaciones */}
+        <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+          <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium text-gray-900">
+              Recordatorios Automáticos de Publicaciones
+            </p>
+            <p className="text-sm text-gray-600">
+              {publicationReminderManager.isReminderSystemActive() ? (
+                <span className="text-green-600">
+                  ✅ Activo - Verificando cada 6 horas (1-3 días antes)
+                </span>
+              ) : (
+                <span className="text-gray-500">
+                  ⏸️ Inactivo - Se activará cuando haya publicaciones y participantes
+                </span>
+              )}
             </p>
           </div>
         </div>

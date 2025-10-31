@@ -18,6 +18,7 @@ import { realtimeSyncService } from './services/realtimeSync';
 import { participantsSyncService } from './services/participantsSync';
 import { launchesSyncService } from './services/launchesSync';
 import { publicationsSyncService } from './services/publicationsSync';
+import { publicationReminderManager } from './services/publicationReminderManager';
 import { googleCalendarService } from './services/googleCalendar';
 import { secureLogger } from './utils/secureLogger';
 
@@ -304,7 +305,7 @@ function App() {
 
   // Las tareas ya no se guardan en localStorage, se sincronizan automáticamente con Supabase
 
-  // Iniciar sistema de recordatorios diarios
+  // Iniciar sistema de recordatorios diarios para tareas
   useEffect(() => {
     if (tasks.length > 0) {
       // Iniciar recordatorios diarios
@@ -316,6 +317,22 @@ function App() {
       taskNotificationManager.stopDailyReminders();
     };
   }, [tasks]);
+
+  // Iniciar sistema de recordatorios automáticos para publicaciones
+  useEffect(() => {
+    if (publications.length > 0 && globalParticipants.length > 0) {
+      // Iniciar recordatorios automáticos para publicaciones
+      publicationReminderManager.startAutomaticReminders(publications, globalParticipants);
+      
+      // Limpiar recordatorios antiguos
+      publicationReminderManager.cleanOldReminders();
+    }
+
+    // Limpiar al desmontar el componente
+    return () => {
+      publicationReminderManager.stopAutomaticReminders();
+    };
+  }, [publications, globalParticipants]);
 
   // Detectar taskId en la URL y abrir la tarea automáticamente
   useEffect(() => {
