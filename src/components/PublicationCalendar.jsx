@@ -40,6 +40,13 @@ const PublicationCalendar = ({
   publications: externalPublications = [], 
   setPublications: setExternalPublications 
 }) => {
+  
+  // Helper function para manejar fechas correctamente
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    // Si ya tiene hora, usarla; si no, agregar T00:00:00 para evitar problemas de zona horaria
+    return new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00');
+  };
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showAddPublication, setShowAddPublication] = useState(false);
@@ -1060,8 +1067,8 @@ const PublicationCalendar = ({
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
       
       const upcomingPublications = publications.filter(pub => {
-        const pubDate = new Date(pub.fecha);
-        return pubDate >= today && pubDate <= nextWeek && pub.estado !== 'publicado' && pub.estado !== 'cancelado';
+        const pubDate = parseDate(pub.fecha);
+        return pubDate && pubDate >= today && pubDate <= nextWeek && pub.estado !== 'publicado' && pub.estado !== 'cancelado';
       });
 
       if (upcomingPublications.length === 0) {
@@ -1682,7 +1689,7 @@ const PublicationCalendar = ({
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">{selectedPublication.titulo}</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {new Date(selectedPublication.fecha).toLocaleDateString('es-ES', {
+                  {parseDate(selectedPublication.fecha)?.toLocaleDateString('es-ES', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -1855,7 +1862,7 @@ const PublicationCalendar = ({
               {/* Metadatos */}
               <div className="pt-4 border-t border-gray-200">
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Creado: {new Date(selectedPublication.fechaCreacion).toLocaleDateString()}</span>
+                  <span>Creado: {selectedPublication.fechaCreacion ? parseDate(selectedPublication.fechaCreacion)?.toLocaleDateString() : 'N/A'}</span>
                   <span>ID: {selectedPublication.id}</span>
                 </div>
               </div>
