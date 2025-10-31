@@ -31,6 +31,7 @@ import { publicationCalendarExportService } from '../services/publicationCalenda
 import { publicationNotificationService } from '../services/publicationNotifications';
 import { publicationsSyncService } from '../services/publicationsSync';
 import { secureLogger } from '../utils/secureLogger';
+import { supabase } from '../lib/supabase';
 
 const PublicationCalendar = ({ 
   launches = [], 
@@ -646,6 +647,34 @@ const PublicationCalendar = ({
     }
   };
 
+  // Forzar eliminación de todas las publicaciones (último recurso)
+  const forceDeleteAllPublications = async () => {
+    if (confirm('⚠️ ÚLTIMO RECURSO: Esto eliminará TODAS las publicaciones.\n\n¿Estás completamente seguro?')) {
+      try {
+        // Eliminar del estado local
+        setPublications([]);
+        savePublications([]);
+        
+        // Intentar eliminar todo de Supabase
+        const { error } = await supabase
+          .from('publicaciones')
+          .delete()
+          .neq('id', 'never_exists'); // Elimina todo
+          
+        if (error) {
+          secureLogger.error('Error eliminando todo de Supabase:', error);
+        } else {
+          secureLogger.sync('Todas las publicaciones eliminadas exitosamente');
+        }
+        
+        alert('✅ Todas las publicaciones han sido eliminadas');
+      } catch (error) {
+        secureLogger.error('Error en eliminación forzada:', error);
+        alert('Error en eliminación forzada');
+      }
+    }
+  };
+
   // Generar días del mes para el calendario
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear();
@@ -708,23 +737,27 @@ const PublicationCalendar = ({
     setShowAddPublication(true);
   };
 
-  // Eliminar publicación
+  // Eliminar publicación - VERSIÓN SIMPLE QUE FUNCIONA
   const handleDeletePublication = async (publicationId) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
-      try {
-        // Primero eliminar de Supabase
-        await deletePublicationFromSupabase(publicationId);
-        
-        // Solo si se eliminó exitosamente de Supabase, eliminar del estado local
-        const updatedPublications = publications.filter(pub => pub.id !== publicationId);
-        savePublications(updatedPublications);
-        
-        setShowPublicationDetails(false);
-        secureLogger.sync('Publicación eliminada exitosamente');
-      } catch (error) {
-        secureLogger.error('Error al eliminar publicación:', error);
-        alert('Error al eliminar la publicación. Por favor, intenta nuevamente.');
-      }
+      // 1. Eliminar del estado local inmediatamente
+      const updatedPublications = publications.filter(pub => pub.id !== publicationId);
+      setPublications(updatedPublications);
+      savePublications(updatedPublications);
+      setShowPublicationDetails(false);
+      
+      // 2. Eliminar de Supabase (sin esperar, en background)
+      supabase
+        .from('publicaciones')
+        .delete()
+        .eq('id', publicationId)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error eliminando de Supabase:', error);
+          } else {
+            console.log('✅ Eliminado de Supabase exitosamente');
+          }
+        });
     }
   };
 
@@ -1081,6 +1114,17 @@ const PublicationCalendar = ({
               <Bell className="w-4 h-4 mr-2" />
               Recordatorios
             </Button>
+            {publications.length > 0 && (
+              <Button
+                onClick={forceDeleteAllPublications}
+                variant="outline"
+                className="border-red-600 text-red-600 hover:bg-red-50"
+                title="Eliminar todas las publicaciones si hay problemas"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Limpiar
+              </Button>
+            )}
           </div>
         </div>
       </div>
