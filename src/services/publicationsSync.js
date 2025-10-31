@@ -75,24 +75,36 @@ class PublicationsSyncService {
         return;
       }
 
-      const formattedPublications = publicaciones.map(pub => ({
-        id: pub.id,
-        titulo: pub.titulo,
-        descripcion: pub.descripcion,
-        fecha: pub.fecha_publicacion,
-        hora: pub.hora_publicacion,
-        plataforma: pub.plataforma,
-        tipo: pub.tipo,
-        tipoContenido: pub.tipo, // Mapear tipo a tipoContenido para compatibilidad
-        estado: pub.estado || 'pendiente',
-        lanzamiento_id: pub.lanzamiento_id,
-        participantes: pub.participantes || [],
-        responsables: pub.participantes || [], // Mapear participantes a responsables para compatibilidad
-        contenido: pub.contenido || '',
-        hashtags: pub.hashtags || [],
-        created_at: pub.created_at,
-        updated_at: pub.updated_at
-      }));
+      const formattedPublications = publicaciones.map(pub => {
+        // Extraer datos completos si existen
+        const datosCompletos = pub.datos_completos || {};
+        
+        return {
+          id: pub.id,
+          titulo: pub.titulo,
+          descripcion: pub.descripcion,
+          fecha: pub.fecha_publicacion,
+          hora: pub.hora_publicacion,
+          plataforma: pub.plataforma,
+          tipo: pub.tipo,
+          tipoContenido: pub.tipo, // Mapear tipo a tipoContenido para compatibilidad
+          estado: pub.estado || 'pendiente',
+          lanzamiento_id: pub.lanzamiento_id,
+          launchId: pub.lanzamiento_id, // Compatibilidad
+          participantes: pub.participantes || [],
+          responsables: pub.participantes || [], // Mapear participantes a responsables para compatibilidad
+          contenido: pub.contenido || '',
+          hashtags: pub.hashtags || [],
+          // Restaurar campos adicionales
+          fase: datosCompletos.fase || 'pre-lanzamiento',
+          objetivos: datosCompletos.objetivos || '',
+          audiencia: datosCompletos.audiencia || '',
+          notas: datosCompletos.notas || '',
+          fechaCreacion: datosCompletos.fechaCreacion || pub.created_at,
+          created_at: pub.created_at,
+          updated_at: pub.updated_at
+        };
+      });
 
       secureLogger.sync('Publicaciones cargadas desde Supabase:', formattedPublications.length);
       
@@ -119,12 +131,20 @@ class PublicationsSyncService {
         fecha_publicacion: publication.fecha,
         hora_publicacion: publication.hora,
         plataforma: publication.plataforma,
-        tipo: publication.tipo || publication.tipoContenido || 'Post', // Mapear tipoContenido a tipo
+        tipo: publication.tipo || publication.tipoContenido || 'Post',
         estado: publication.estado || 'pendiente',
-        lanzamiento_id: publication.lanzamiento_id,
-        participantes: publication.participantes || publication.responsables || [], // Mapear responsables a participantes
+        lanzamiento_id: publication.lanzamiento_id || publication.launchId,
+        participantes: publication.participantes || publication.responsables || [],
         contenido: publication.contenido || '',
         hashtags: publication.hashtags || [],
+        // Campos adicionales como JSONB para conservar todos los datos
+        datos_completos: {
+          fase: publication.fase,
+          objetivos: publication.objetivos,
+          audiencia: publication.audiencia,
+          notas: publication.notas,
+          fechaCreacion: publication.fechaCreacion
+        },
         updated_at: new Date().toISOString()
       };
 
