@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Mail, CheckCircle, XCircle, Settings, LogOut } from 'lucide-react';
 import { googleAuthService } from '../services/googleAuth';
+import { secureLogger } from '../utils/secureLogger';
 import { googleCalendarService } from '../services/googleCalendar';
 import { emailNotificationService } from '../services/emailNotifications';
 
@@ -43,6 +44,7 @@ export function GoogleIntegration({ onClose }) {
         setIsLoading(false);
         
         // Disparar evento personalizado para notificar a App.jsx
+        secureLogger.auth('Disparando evento google-auth-success');
         window.dispatchEvent(new CustomEvent('google-auth-success', { 
           detail: { profile } 
         }));
@@ -63,6 +65,10 @@ export function GoogleIntegration({ onClose }) {
       type: 'info',
       text: 'Sesión cerrada correctamente.'
     });
+    
+    // Disparar evento personalizado para notificar al componente principal
+    const signOutEvent = new CustomEvent('google-signout');
+    window.dispatchEvent(signOutEvent);
   };
 
   return (

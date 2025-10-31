@@ -18,6 +18,7 @@ import { realtimeSyncService } from './services/realtimeSync';
 import { participantsSyncService } from './services/participantsSync';
 import { launchesSyncService } from './services/launchesSync';
 import { googleCalendarService } from './services/googleCalendar';
+import { secureLogger } from './utils/secureLogger';
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -92,6 +93,24 @@ function App() {
     };
   }, [showDropdownMenu]);
 
+  // Monitorear cambios en el estado de autenticación
+  useEffect(() => {
+    // Listener para eventos de cierre de sesión
+    const handleSignOut = () => {
+      console.log('🔓 Evento de cierre de sesión detectado');
+      setIsGoogleAuthenticated(false);
+      setUserEmail('');
+      localStorage.removeItem('userEmail');
+    };
+
+    // Escuchar eventos personalizados
+    window.addEventListener('google-signout', handleSignOut);
+
+    return () => {
+      window.removeEventListener('google-signout', handleSignOut);
+    };
+  }, []);
+
   // Iniciar sincronización en tiempo real
   useEffect(() => {
     console.log('🚀 Iniciando app con sincronización en tiempo real...');
@@ -101,15 +120,19 @@ function App() {
       // Intentar obtener del perfil de Google si está autenticado
       const { googleAuthService } = await import('./services/googleAuth');
       const isAuth = googleAuthService.isAuthenticated();
+      secureLogger.auth('Estado de autenticación inicial:', { authenticated: isAuth });
       setIsGoogleAuthenticated(isAuth);
       
       if (isAuth) {
+        secureLogger.auth('Usuario autenticado, obteniendo perfil...');
         const profile = await googleAuthService.getUserProfile();
+        secureLogger.auth('Perfil obtenido:', profile);
         if (profile?.email) {
           setUserEmail(profile.email);
           localStorage.setItem('userEmail', profile.email);
         }
       } else {
+        console.log('❌ Usuario no autenticado');
         // Si no está autenticado, limpiar el email
         setUserEmail('');
         localStorage.removeItem('userEmail');
@@ -120,15 +143,19 @@ function App() {
 
     // Escuchar eventos de autenticación exitosa de Google
     const handleGoogleAuthSuccess = async (event) => {
-      console.log('✅ Autenticación de Google exitosa, actualizando estado...');
+      secureLogger.auth('Autenticación de Google exitosa, actualizando estado...');
       const profile = event.detail?.profile;
-      
-      setIsGoogleAuthenticated(true);
+      secureLogger.auth('Perfil recibido en evento:', profile);
       
       if (profile?.email) {
+        secureLogger.auth('Guardando email del usuario');
         setUserEmail(profile.email);
         localStorage.setItem('userEmail', profile.email);
       }
+      
+      // Actualizar estado de autenticación
+      secureLogger.auth('Actualizando estado de autenticación a: true');
+      setIsGoogleAuthenticated(true);
       
       // Forzar actualización del estado de conexión en tiempo real
       setIsRealtimeConnected(true);
@@ -183,7 +210,7 @@ function App() {
       
       // Iniciar sincronización en tiempo real
       participantsSyncService.startSync((updatedParticipants) => {
-        console.log('📥 Participantes actualizados desde Supabase:', updatedParticipants.length);
+        secureLogger.sync('Participantes actualizados desde Supabase:', updatedParticipants.length);
         setGlobalParticipants(updatedParticipants);
         
         // También guardar en localStorage como backup
@@ -960,94 +987,170 @@ function App() {
     );
   };
 
-  // Si no está autenticado, mostrar pantalla de login
+  // Si no está autenticado, mostrar pantalla de login profesional
   if (!isGoogleAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          {/* Card de Login */}
-          <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6">
-            {/* Logo y Título */}
-            <div className="text-center space-y-4">
-              <div className="inline-block">
-                <img 
-                  src="/mvpx.png" 
-                  alt="Logo MVPX" 
-                  className="w-20 h-20 object-contain mx-auto"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }}
-                />
-                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl hidden">
-                  <Music className="w-12 h-12 text-white" />
-                </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex">
+        {/* Panel izquierdo - Branding */}
+        <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-20 xl:px-24 bg-gradient-to-br from-gray-900 via-gray-800 to-black relative overflow-hidden">
+          {/* Fondo animado con gradiente */}
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-purple-600/15 to-transparent animate-pulse"></div>
+          
+          {/* Elementos decorativos animados */}
+          <div className="absolute top-20 left-20 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '3s' }}></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/8 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }}></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-pink-400/5 to-purple-400/5 rounded-full blur-2xl animate-spin" style={{ animationDuration: '20s' }}></div>
+          
+          {/* Partículas flotantes */}
+          <div className="absolute top-32 right-32 w-4 h-4 bg-pink-400/30 rounded-full animate-ping" style={{ animationDuration: '2s' }}></div>
+          <div className="absolute bottom-32 left-32 w-3 h-3 bg-purple-400/40 rounded-full animate-ping" style={{ animationDelay: '1s', animationDuration: '3s' }}></div>
+          <div className="absolute top-1/3 right-1/4 w-2 h-2 bg-pink-300/50 rounded-full animate-pulse" style={{ animationDelay: '0.5s', animationDuration: '2.5s' }}></div>
+          
+          <div className="relative z-10">
+            <div className="mb-8">
+              <img 
+                src="/mi-logo-blanco.svg" 
+                alt="Mi Logo" 
+                className="w-24 h-24 lg:w-32 lg:h-32 object-contain mb-6"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="bg-pink-500/20 backdrop-blur-sm p-6 rounded-2xl w-24 h-24 lg:w-32 lg:h-32 items-center justify-center hidden">
+                <Music className="w-12 h-12 lg:w-16 lg:h-16 text-pink-400" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Proyecto Dayan</h1>
-                <p className="text-gray-600 mt-2">Cronograma Musical</p>
+            </div>
+            
+            <h1 className="text-4xl xl:text-5xl font-bold text-white mb-6 leading-tight">
+              Gestión Musical
+              <br />
+              <span className="text-pink-400">Profesional</span>
+            </h1>
+            
+            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+              Planifica, organiza y ejecuta tus lanzamientos musicales con herramientas de nivel empresarial.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 text-gray-200">
+                <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
+                <span>Sincronización en tiempo real</span>
+              </div>
+              <div className="flex items-center gap-4 text-gray-200">
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <span>Colaboración en equipo</span>
+              </div>
+              <div className="flex items-center gap-4 text-gray-200">
+                <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                <span>Notificaciones inteligentes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel derecho - Formulario de Login */}
+        <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
+          <div className="mx-auto w-full max-w-sm lg:max-w-md">
+            {/* Logo móvil */}
+            <div className="lg:hidden text-center mb-8">
+              <img 
+                src="/mi-logo.svg" 
+                alt="Mi Logo" 
+                className="w-24 h-24 sm:w-28 sm:h-28 object-contain mx-auto mb-4"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="bg-gradient-to-br from-pink-500 to-purple-600 p-6 rounded-2xl w-24 h-24 sm:w-28 sm:h-28 mx-auto items-center justify-center hidden">
+                <Music className="w-12 h-12 sm:w-14 sm:h-14 text-white" />
               </div>
             </div>
 
-            {/* Mensaje */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
-                  <Settings className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-1">
-                    Autenticación Requerida
-                  </h3>
-                  <p className="text-sm text-blue-800">
-                    Debes iniciar sesión con tu cuenta de Google para acceder al sistema de gestión de cronogramas.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón de Login */}
-            <button
-              onClick={() => {
-                // Importar y abrir el modal de Google Integration
-                const event = new CustomEvent('open-google-settings');
-                window.dispatchEvent(event);
-              }}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-            >
-              <Settings className="w-5 h-5" />
-              Iniciar Sesión con Google
-            </button>
-
-            {/* Características */}
-            <div className="pt-4 border-t border-gray-200">
-              <p className="text-sm font-semibold text-gray-700 mb-3">
-                ¿Qué puedes hacer?
+            {/* Header */}
+            <div className="text-center lg:text-left mb-8">
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                Bienvenido
+              </h2>
+              <p className="text-lg text-gray-600">
+                Inicia sesión para acceder a Proyecto Dayan
               </p>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  Gestionar tareas y cronogramas
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                  Sincronizar con Google Calendar
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  Recibir notificaciones por email
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-                  Colaborar en tiempo real
-                </li>
-              </ul>
+            </div>
+
+            {/* Botón de Google */}
+            <div className="space-y-6">
+              <button
+                onClick={() => {
+                  const event = new CustomEvent('open-google-settings');
+                  window.dispatchEvent(event);
+                }}
+                className="group relative w-full flex justify-center items-center px-4 py-4 border border-gray-300 rounded-xl text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="/google.png" 
+                    alt="Google" 
+                    className="w-5 h-5"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <div className="w-5 h-5 bg-gradient-to-r from-blue-500 to-red-500 rounded hidden"></div>
+                  <span>Continuar con Google</span>
+                </div>
+              </button>
+
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Características</span>
+                </div>
+              </div>
+
+              {/* Características */}
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50">
+                  <div className="flex-shrink-0 w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Calendario de Lanzamientos</p>
+                    <p className="text-xs text-gray-500">Planifica tu estrategia musical</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50">
+                  <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <Users className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Colaboración en Equipo</p>
+                    <p className="text-xs text-gray-500">Trabaja con tu equipo en tiempo real</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50">
+                  <div className="flex-shrink-0 w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Análisis y Reportes</p>
+                    <p className="text-xs text-gray-500">Métricas y KPIs detallados</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Footer */}
-            <div className="text-center pt-4">
-              <p className="text-xs text-gray-500">
-                🔒 Tus datos están protegidos y seguros
+            <div className="mt-8 text-center">
+              <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
+                <span className="inline-block w-3 h-3 text-green-500">🔒</span>
+                Tus datos están protegidos con encriptación de nivel empresarial
               </p>
             </div>
           </div>
@@ -1066,8 +1169,8 @@ function App() {
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="bg-gray-50 p-1.5 sm:p-2 rounded-lg sm:rounded-xl flex-shrink-0">
                 <img 
-                  src="/mvpx.png" 
-                  alt="Logo MVPX" 
+                  src="/mi-logo.svg" 
+                  alt="Mi Logo" 
                   className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                   onError={(e) => {
                     e.target.style.display = 'none';
