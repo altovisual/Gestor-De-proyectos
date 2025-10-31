@@ -3,7 +3,7 @@
  * Maneja la sincronización en tiempo real de las publicaciones del calendario
  */
 
-import { supabase } from './supabase';
+import { supabase } from '../lib/supabase';
 import { secureLogger } from '../utils/secureLogger';
 
 class PublicationsSyncService {
