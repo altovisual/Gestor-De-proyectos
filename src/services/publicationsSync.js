@@ -184,6 +184,7 @@ class PublicationsSyncService {
       }
 
       // Proceder con la eliminación
+      secureLogger.debug('Ejecutando DELETE en Supabase...');
       const { data, error } = await supabase
         .from('publicaciones')
         .delete()
@@ -202,7 +203,31 @@ class PublicationsSyncService {
       }
 
       secureLogger.debug('Respuesta de eliminación:', data);
-      secureLogger.sync('Publicación eliminada de Supabase exitosamente:', publicationId);
+      
+      if (!data || data.length === 0) {
+        secureLogger.warn('⚠️ ADVERTENCIA: La consulta DELETE no devolvió datos. Esto podría indicar que no se eliminó nada.');
+        secureLogger.warn('Posibles causas: ID no encontrado, permisos RLS, o restricciones de BD');
+      } else {
+        secureLogger.sync('✅ Publicación eliminada de Supabase exitosamente:', publicationId);
+        secureLogger.debug('Datos eliminados:', data);
+      }
+      
+      // Verificar que realmente se eliminó
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('publicaciones')
+        .select('id')
+        .eq('id', publicationId);
+
+      if (verifyError) {
+        secureLogger.error('Error verificando eliminación:', verifyError);
+      } else if (verifyData && verifyData.length > 0) {
+        secureLogger.error('🚨 ERROR CRÍTICO: La publicación AÚN EXISTE después del DELETE');
+        secureLogger.error('Esto indica un problema de permisos o restricciones en Supabase');
+        throw new Error('La publicación no se pudo eliminar de Supabase');
+      } else {
+        secureLogger.sync('✅ Verificación: La publicación fue eliminada correctamente');
+      }
+      
       secureLogger.debug('=== FIN ELIMINACIÓN ===');
       
       return data;
@@ -210,6 +235,67 @@ class PublicationsSyncService {
       secureLogger.error('Error general al eliminar publicación:', error);
       secureLogger.debug('=== ERROR EN ELIMINACIÓN ===');
       throw error;
+    }
+  }
+
+  /**
+   * Verificar permisos RLS en la tabla publicaciones
+   */
+  async checkRLSPermissions() {
+    try {
+      secureLogger.debug('Verificando permisos RLS...');
+      
+      // Intentar operaciones básicas para verificar permisos
+      const testId = 'test_' + Date.now();
+      
+      // 1. Intentar INSERT
+      const { data: insertData, error: insertError } = await supabase
+        .from('publicaciones')
+        .insert({
+          id: testId,
+          titulo: 'Test RLS',
+          fecha_publicacion: '2025-12-01',
+          plataforma: 'Test',
+          tipo: 'Test'
+        })
+        .select();
+
+      if (insertError) {
+        secureLogger.error('❌ Sin permisos INSERT:', insertError.message);
+        return { insert: false, update: false, delete: false, select: false };
+      }
+
+      // 2. Intentar UPDATE
+      const { error: updateError } = await supabase
+        .from('publicaciones')
+        .update({ titulo: 'Test RLS Updated' })
+        .eq('id', testId);
+
+      // 3. Intentar DELETE
+      const { error: deleteError } = await supabase
+        .from('publicaciones')
+        .delete()
+        .eq('id', testId);
+
+      // 4. Verificar SELECT
+      const { data: selectData, error: selectError } = await supabase
+        .from('publicaciones')
+        .select('id')
+        .limit(1);
+
+      const permissions = {
+        insert: !insertError,
+        update: !updateError,
+        delete: !deleteError,
+        select: !selectError
+      };
+
+      secureLogger.debug('Permisos RLS verificados:', permissions);
+      return permissions;
+
+    } catch (error) {
+      secureLogger.error('Error verificando permisos RLS:', error);
+      return { insert: false, update: false, delete: false, select: false };
     }
   }
 

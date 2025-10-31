@@ -966,6 +966,26 @@ const PublicationCalendar = ({
     }
   };
 
+  // Verificar permisos RLS
+  const checkRLSPermissions = async () => {
+    try {
+      const permissions = await publicationsSyncService.checkRLSPermissions();
+      const results = [
+        `📖 SELECT: ${permissions.select ? '✅' : '❌'}`,
+        `➕ INSERT: ${permissions.insert ? '✅' : '❌'}`,
+        `✏️ UPDATE: ${permissions.update ? '✅' : '❌'}`,
+        `🗑️ DELETE: ${permissions.delete ? '✅' : '❌'}`
+      ].join('\n');
+      
+      const hasAllPerms = Object.values(permissions).every(p => p);
+      const title = hasAllPerms ? '✅ Permisos RLS OK' : '❌ Problemas de Permisos';
+      
+      alert(`${title}\n\n${results}\n\n${!permissions.delete ? '💡 El problema está en permisos DELETE' : ''}`);
+    } catch (error) {
+      alert(`❌ Error verificando permisos: ${error.message}`);
+    }
+  };
+
   // Eliminar todas las publicaciones (función de emergencia)
   const deleteAllPublications = async () => {
     if (!confirm('⚠️ ADVERTENCIA: Esto eliminará TODAS las publicaciones.\n\n¿Estás seguro de que quieres continuar?')) {
@@ -1119,6 +1139,15 @@ const PublicationCalendar = ({
             >
               <Settings className="w-4 h-4 mr-2" />
               Diagnóstico
+            </Button>
+            <Button
+              onClick={checkRLSPermissions}
+              variant="outline"
+              className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
+              title="Verificar permisos de base de datos"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Permisos
             </Button>
             <Button
               onClick={deleteAllPublications}
