@@ -1059,6 +1059,59 @@ const PublicationCalendar = ({
   };
 
 
+  // Enviar recordatorio para una publicación específica
+  const sendIndividualReminder = async (publication) => {
+    try {
+      console.log('📧 Enviando recordatorio individual para:', publication.titulo);
+      
+      // Obtener responsables de esta publicación específica
+      const responsables = publication.responsables || [];
+      
+      if (responsables.length === 0) {
+        alert('Esta publicación no tiene responsables asignados.');
+        return;
+      }
+      
+      // Buscar participantes con email
+      const responsibleParticipants = responsables
+        .map(responsable => globalParticipants.find(p => (p.nombre || p.name || p) === responsable))
+        .filter(participant => participant && participant.email);
+      
+      console.log('🔍 Debug recordatorio individual:');
+      console.log('- Responsables:', responsables);
+      console.log('- Participantes con email:', responsibleParticipants.map(p => p.email));
+      
+      if (responsibleParticipants.length === 0) {
+        const debugMessage = responsables.length > 0 
+          ? `Se encontraron responsables (${responsables.join(', ')}) pero ninguno tiene email registrado.`
+          : 'No se encontraron responsables asignados a esta publicación.';
+          
+        alert(`No hay participantes con email para enviar recordatorio.\n\n${debugMessage}`);
+        return;
+      }
+      
+      // Enviar recordatorio solo para esta publicación
+      const result = await publicationNotificationService.notifyUpcomingPublications(
+        [publication], // Solo esta publicación
+        responsibleParticipants
+      );
+      
+      if (result.success) {
+        const detailMessage = result.details 
+          ? `\n\n📊 Detalles: ${result.details.sent} enviados, ${result.details.failed} fallaron`
+          : '';
+        alert(`✅ Recordatorio enviado para "${publication.titulo}"${detailMessage}`);
+        console.log('✅ Recordatorio individual enviado');
+      } else {
+        alert(`⚠️ ${result.message}\n\n💡 Tip: Si ves errores 401, es normal. Algunos emails pueden haberse enviado correctamente.`);
+        console.warn('⚠️ No se pudo enviar recordatorio individual:', result.message);
+      }
+    } catch (error) {
+      console.error('❌ Error enviando recordatorio individual:', error);
+      alert('Error al enviar recordatorio. Por favor, intenta nuevamente.');
+    }
+  };
+
   // Enviar recordatorios de publicaciones próximas
   const sendUpcomingReminders = async () => {
     try {
@@ -1727,6 +1780,16 @@ const PublicationCalendar = ({
                   </select>
                 </div>
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sendIndividualReminder(selectedPublication)}
+                    className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                    title="Enviar recordatorio solo para esta publicación"
+                  >
+                    <Bell className="w-4 h-4 mr-1" />
+                    Recordatorio
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

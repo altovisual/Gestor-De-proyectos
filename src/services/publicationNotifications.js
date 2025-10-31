@@ -65,7 +65,7 @@ class PublicationNotificationService {
         <div style="background-color: #eef2ff; padding: 20px; border-radius: 8px; border-left: 4px solid #4f46e5;">
           <h3 style="margin-top: 0; color: #3730a3;">📝 Detalles de la Publicación</h3>
           <p><strong>Título:</strong> ${publication.titulo}</p>
-          <p><strong>Fecha de publicación:</strong> ${new Date(publication.fecha).toLocaleDateString('es-ES', {
+          <p><strong>Fecha de publicación:</strong> ${new Date(publication.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
@@ -259,15 +259,53 @@ class PublicationNotificationService {
     const subject = `⏰ Recordatorio: Publicaciones próximas (${publications.length})`;
     
     const publicationsList = publications.map(pub => `
-      <div style="background-color: #fef7cd; padding: 15px; border-radius: 8px; margin: 10px 0;">
-        <h4 style="margin-top: 0; color: #a16207;">${pub.titulo}</h4>
-        <p><strong>Fecha:</strong> ${new Date(pub.fecha).toLocaleDateString('es-ES', {
+      <div style="background-color: #eef2ff; padding: 20px; border-radius: 8px; border-left: 4px solid #4f46e5; margin: 15px 0;">
+        <h3 style="margin-top: 0; color: #3730a3;">📝 ${pub.titulo}</h3>
+        <p><strong>Fecha de publicación:</strong> ${new Date(pub.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
           weekday: 'long',
           day: 'numeric',
-          month: 'long'
+          month: 'long',
+          year: 'numeric'
         })} a las ${pub.hora}</p>
-        <p><strong>Plataforma:</strong> ${pub.plataforma} | <strong>Tipo:</strong> ${pub.tipoContenido}</p>
+        <p><strong>Plataforma:</strong> ${pub.plataforma}</p>
+        <p><strong>Tipo de contenido:</strong> ${pub.tipoContenido}</p>
+        <p><strong>Fase:</strong> ${this._getFaseNombre(pub.fase)}</p>
         <p><strong>Estado:</strong> ${this._getEstadoBadge(pub.estado)}</p>
+        
+        ${pub.descripcion ? `
+        <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4 style="margin-top: 0; color: #374151;">📄 Descripción</h4>
+          <p style="margin-bottom: 0;">${pub.descripcion}</p>
+        </div>
+        ` : ''}
+
+        ${pub.objetivos ? `
+        <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4 style="margin-top: 0; color: #065f46;">🎯 Objetivos</h4>
+          <p style="margin-bottom: 0;">${pub.objetivos}</p>
+        </div>
+        ` : ''}
+
+        ${pub.audiencia ? `
+        <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4 style="margin-top: 0; color: #92400e;">👥 Audiencia Objetivo</h4>
+          <p style="margin-bottom: 0;">${pub.audiencia}</p>
+        </div>
+        ` : ''}
+
+        ${pub.hashtags ? `
+        <div style="background-color: #f3e8ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4 style="margin-top: 0; color: #6b21a8;">#️⃣ Hashtags Sugeridos</h4>
+          <p style="margin-bottom: 0; font-family: monospace;">${pub.hashtags}</p>
+        </div>
+        ` : ''}
+
+        ${pub.notas ? `
+        <div style="background-color: #fef7cd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <h4 style="margin-top: 0; color: #a16207;">📋 Notas Adicionales</h4>
+          <p style="margin-bottom: 0;">${pub.notas}</p>
+        </div>
+        ` : ''}
       </div>
     `).join('');
 
