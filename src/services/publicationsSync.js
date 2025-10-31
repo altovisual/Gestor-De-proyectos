@@ -83,6 +83,7 @@ class PublicationsSyncService {
         hora: pub.hora_publicacion,
         plataforma: pub.plataforma,
         tipo: pub.tipo,
+        tipoContenido: pub.tipo, // Mapear tipo a tipoContenido para compatibilidad
         estado: pub.estado || 'pendiente',
         lanzamiento_id: pub.lanzamiento_id,
         participantes: pub.participantes || [],
@@ -117,7 +118,7 @@ class PublicationsSyncService {
         fecha_publicacion: publication.fecha,
         hora_publicacion: publication.hora,
         plataforma: publication.plataforma,
-        tipo: publication.tipo,
+        tipo: publication.tipo || publication.tipoContenido || 'Post', // Mapear tipoContenido a tipo
         estado: publication.estado || 'pendiente',
         lanzamiento_id: publication.lanzamiento_id,
         participantes: publication.participantes || [],
