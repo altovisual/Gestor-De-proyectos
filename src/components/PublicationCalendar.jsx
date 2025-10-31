@@ -23,7 +23,8 @@ import {
   Save,
   X,
   Check,
-  Bell
+  Bell,
+  Settings
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { publicationCalendarExportService } from '../services/publicationCalendarExport';
@@ -951,6 +952,20 @@ const PublicationCalendar = ({
     }
   };
 
+  // Verificar estado de la tabla en Supabase
+  const checkTableStatus = async () => {
+    try {
+      const status = await publicationsSyncService.checkTableStatus();
+      if (status.exists) {
+        alert(`✅ Tabla publicaciones OK\n📊 Registros: ${status.count || 0}`);
+      } else {
+        alert(`❌ Problema con tabla publicaciones:\n${status.error}\n\n💡 ${status.suggestion}`);
+      }
+    } catch (error) {
+      alert(`❌ Error verificando tabla: ${error.message}`);
+    }
+  };
+
   // Enviar recordatorios de publicaciones próximas
   const sendUpcomingReminders = async () => {
     try {
@@ -1075,6 +1090,15 @@ const PublicationCalendar = ({
             >
               <Bell className="w-4 h-4 mr-2" />
               Recordatorios
+            </Button>
+            <Button
+              onClick={checkTableStatus}
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-50"
+              title="Verificar estado de la base de datos"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Diagnóstico
             </Button>
           </div>
         </div>

@@ -34,6 +34,14 @@ class PublicationsSyncService {
     try {
       secureLogger.sync('Iniciando sincronización de publicaciones...');
       
+      // Verificar que la tabla existe antes de continuar
+      const tableStatus = await this.checkTableStatus();
+      if (!tableStatus.exists) {
+        secureLogger.error('No se puede inicializar: tabla publicaciones no existe');
+        secureLogger.error('Sugerencia:', tableStatus.suggestion);
+        return;
+      }
+      
       // Suscribirse a cambios en tiempo real
       this.subscription = supabase
         .channel('publicaciones-changes')
@@ -153,8 +161,29 @@ class PublicationsSyncService {
    */
   async deletePublication(publicationId) {
     try {
-      secureLogger.debug('Intentando eliminar publicación:', publicationId);
+      secureLogger.debug('=== INICIO ELIMINACIÓN ===');
+      secureLogger.debug('ID de publicación a eliminar:', publicationId);
       
+      // Primero verificar si la publicación existe
+      const { data: existingData, error: checkError } = await supabase
+        .from('publicaciones')
+        .select('*')
+        .eq('id', publicationId);
+
+      if (checkError) {
+        secureLogger.error('Error verificando existencia de publicación:', checkError);
+        throw checkError;
+      }
+
+      secureLogger.debug('Publicación encontrada antes de eliminar:', existingData);
+
+      if (!existingData || existingData.length === 0) {
+        secureLogger.warn('La publicación no existe en Supabase:', publicationId);
+        // No es un error, puede que ya esté eliminada
+        return [];
+      }
+
+      // Proceder con la eliminación
       const { data, error } = await supabase
         .from('publicaciones')
         .delete()
@@ -163,16 +192,60 @@ class PublicationsSyncService {
 
       if (error) {
         secureLogger.error('Error de Supabase al eliminar publicación:', error);
+        secureLogger.error('Detalles del error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
       secureLogger.debug('Respuesta de eliminación:', data);
       secureLogger.sync('Publicación eliminada de Supabase exitosamente:', publicationId);
+      secureLogger.debug('=== FIN ELIMINACIÓN ===');
       
       return data;
     } catch (error) {
-      secureLogger.error('Error al eliminar publicación:', error);
+      secureLogger.error('Error general al eliminar publicación:', error);
+      secureLogger.debug('=== ERROR EN ELIMINACIÓN ===');
       throw error;
+    }
+  }
+
+  /**
+   * Verificar si la tabla publicaciones existe y está configurada correctamente
+   */
+  async checkTableStatus() {
+    try {
+      secureLogger.debug('Verificando estado de la tabla publicaciones...');
+      
+      // Intentar hacer una consulta simple para verificar si la tabla existe
+      const { data, error } = await supabase
+        .from('publicaciones')
+        .select('count(*)')
+        .limit(1);
+
+      if (error) {
+        secureLogger.error('La tabla publicaciones no existe o hay un problema:', error);
+        return {
+          exists: false,
+          error: error.message,
+          suggestion: 'Ejecuta el script create_publicaciones_table.sql en Supabase'
+        };
+      }
+
+      secureLogger.sync('Tabla publicaciones verificada correctamente');
+      return {
+        exists: true,
+        count: data?.[0]?.count || 0
+      };
+    } catch (error) {
+      secureLogger.error('Error verificando tabla publicaciones:', error);
+      return {
+        exists: false,
+        error: error.message
+      };
     }
   }
 
