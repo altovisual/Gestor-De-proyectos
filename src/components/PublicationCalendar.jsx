@@ -639,9 +639,10 @@ const PublicationCalendar = ({
     try {
       await publicationsSyncService.deletePublication(publicationId);
       secureLogger.sync('Publicación eliminada de Supabase exitosamente');
+      return true;
     } catch (error) {
       secureLogger.error('Error al eliminar publicación de Supabase:', error);
-      throw error; // Propagar el error para que se maneje en handleDeletePublication
+      throw error;
     }
   };
 
@@ -952,59 +953,6 @@ const PublicationCalendar = ({
     }
   };
 
-  // Verificar estado de la tabla en Supabase
-  const checkTableStatus = async () => {
-    try {
-      const status = await publicationsSyncService.checkTableStatus();
-      if (status.exists) {
-        alert(`✅ Tabla publicaciones OK\n📊 Registros: ${status.count || 0}`);
-      } else {
-        alert(`❌ Problema con tabla publicaciones:\n${status.error}\n\n💡 ${status.suggestion}`);
-      }
-    } catch (error) {
-      alert(`❌ Error verificando tabla: ${error.message}`);
-    }
-  };
-
-  // Verificar permisos RLS
-  const checkRLSPermissions = async () => {
-    try {
-      const permissions = await publicationsSyncService.checkRLSPermissions();
-      const results = [
-        `📖 SELECT: ${permissions.select ? '✅' : '❌'}`,
-        `➕ INSERT: ${permissions.insert ? '✅' : '❌'}`,
-        `✏️ UPDATE: ${permissions.update ? '✅' : '❌'}`,
-        `🗑️ DELETE: ${permissions.delete ? '✅' : '❌'}`
-      ].join('\n');
-      
-      const hasAllPerms = Object.values(permissions).every(p => p);
-      const title = hasAllPerms ? '✅ Permisos RLS OK' : '❌ Problemas de Permisos';
-      
-      alert(`${title}\n\n${results}\n\n${!permissions.delete ? '💡 El problema está en permisos DELETE' : ''}`);
-    } catch (error) {
-      alert(`❌ Error verificando permisos: ${error.message}`);
-    }
-  };
-
-  // Eliminar todas las publicaciones (función de emergencia)
-  const deleteAllPublications = async () => {
-    if (!confirm('⚠️ ADVERTENCIA: Esto eliminará TODAS las publicaciones.\n\n¿Estás seguro de que quieres continuar?')) {
-      return;
-    }
-
-    try {
-      await publicationsSyncService.deleteAllPublications();
-      
-      // Limpiar estado local
-      setPublications([]);
-      savePublications([]);
-      
-      alert('✅ Todas las publicaciones han sido eliminadas exitosamente');
-    } catch (error) {
-      secureLogger.error('Error eliminando todas las publicaciones:', error);
-      alert(`❌ Error: ${error.message}`);
-    }
-  };
 
   // Enviar recordatorios de publicaciones próximas
   const sendUpcomingReminders = async () => {
@@ -1130,33 +1078,6 @@ const PublicationCalendar = ({
             >
               <Bell className="w-4 h-4 mr-2" />
               Recordatorios
-            </Button>
-            <Button
-              onClick={checkTableStatus}
-              variant="outline"
-              className="border-red-600 text-red-600 hover:bg-red-50"
-              title="Verificar estado de la base de datos"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Diagnóstico
-            </Button>
-            <Button
-              onClick={checkRLSPermissions}
-              variant="outline"
-              className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
-              title="Verificar permisos de base de datos"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Permisos
-            </Button>
-            <Button
-              onClick={deleteAllPublications}
-              variant="outline"
-              className="border-red-800 text-red-800 hover:bg-red-100"
-              title="⚠️ Eliminar TODAS las publicaciones"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Limpiar Todo
             </Button>
           </div>
         </div>
