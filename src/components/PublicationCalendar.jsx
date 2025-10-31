@@ -637,9 +637,10 @@ const PublicationCalendar = ({
   const deletePublicationFromSupabase = async (publicationId) => {
     try {
       await publicationsSyncService.deletePublication(publicationId);
-      secureLogger.sync('Publicación eliminada exitosamente');
+      secureLogger.sync('Publicación eliminada de Supabase exitosamente');
     } catch (error) {
-      secureLogger.error('Error al eliminar publicación:', error);
+      secureLogger.error('Error al eliminar publicación de Supabase:', error);
+      throw error; // Propagar el error para que se maneje en handleDeletePublication
     }
   };
 
@@ -708,12 +709,20 @@ const PublicationCalendar = ({
   // Eliminar publicación
   const handleDeletePublication = async (publicationId) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
-      const updatedPublications = publications.filter(pub => pub.id !== publicationId);
-      savePublications(updatedPublications);
-      
-      // Eliminar de Supabase
-      await deletePublicationFromSupabase(publicationId);
-      setShowPublicationDetails(false);
+      try {
+        // Primero eliminar de Supabase
+        await deletePublicationFromSupabase(publicationId);
+        
+        // Solo si se eliminó exitosamente de Supabase, eliminar del estado local
+        const updatedPublications = publications.filter(pub => pub.id !== publicationId);
+        savePublications(updatedPublications);
+        
+        setShowPublicationDetails(false);
+        secureLogger.sync('Publicación eliminada exitosamente');
+      } catch (error) {
+        secureLogger.error('Error al eliminar publicación:', error);
+        alert('Error al eliminar la publicación. Por favor, intenta nuevamente.');
+      }
     }
   };
 

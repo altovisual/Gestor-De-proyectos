@@ -153,17 +153,23 @@ class PublicationsSyncService {
    */
   async deletePublication(publicationId) {
     try {
-      const { error } = await supabase
+      secureLogger.debug('Intentando eliminar publicación:', publicationId);
+      
+      const { data, error } = await supabase
         .from('publicaciones')
         .delete()
-        .eq('id', publicationId);
+        .eq('id', publicationId)
+        .select(); // Agregar select para ver qué se eliminó
 
       if (error) {
-        secureLogger.error('Error al eliminar publicación:', error);
+        secureLogger.error('Error de Supabase al eliminar publicación:', error);
         throw error;
       }
 
-      secureLogger.sync('Publicación eliminada de Supabase:', publicationId);
+      secureLogger.debug('Respuesta de eliminación:', data);
+      secureLogger.sync('Publicación eliminada de Supabase exitosamente:', publicationId);
+      
+      return data;
     } catch (error) {
       secureLogger.error('Error al eliminar publicación:', error);
       throw error;
