@@ -901,6 +901,10 @@ const PublicationCalendar = ({
 
     // Si estamos editando, actualizar la publicación existente
     if (newPublication.id) {
+      console.log('🔄 Editando publicación:', newPublication.id);
+      console.log('📝 Datos a guardar:', newPublication);
+      console.log('👥 Responsables:', newPublication.responsables);
+      
       const updatedPublications = publications.map(pub => 
         pub.id === newPublication.id ? newPublication : pub
       );
@@ -1784,11 +1788,10 @@ const PublicationCalendar = ({
                     variant="outline"
                     size="sm"
                     onClick={() => sendIndividualReminder(selectedPublication)}
-                    className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                    className="border-orange-600 text-orange-600 hover:bg-orange-50 px-2 py-1 text-xs"
                     title="Enviar recordatorio solo para esta publicación"
                   >
-                    <Bell className="w-4 h-4 mr-1" />
-                    Recordatorio
+                    <Bell className="w-3 h-3" />
                   </Button>
                   <Button
                     variant="outline"

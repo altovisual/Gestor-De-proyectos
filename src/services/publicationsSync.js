@@ -124,6 +124,10 @@ class PublicationsSyncService {
    */
   async savePublication(publication) {
     try {
+      console.log('💾 Guardando en Supabase:', publication.titulo);
+      console.log('👥 Responsables recibidos:', publication.responsables);
+      console.log('👥 Participantes recibidos:', publication.participantes);
+      
       const publicationData = {
         id: publication.id,
         titulo: publication.titulo,
@@ -147,6 +151,9 @@ class PublicationsSyncService {
         },
         updated_at: new Date().toISOString()
       };
+      
+      console.log('📦 Datos finales a enviar a Supabase:', publicationData);
+      console.log('👥 Participantes finales:', publicationData.participantes);
 
       const { data, error } = await supabase
         .from('publicaciones')
