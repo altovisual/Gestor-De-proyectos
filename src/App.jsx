@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb, Wifi, WifiOff, Settings } from 'lucide-react';
+import { Music, Calendar, Target, TrendingUp, Download, Plus, Check, Clock, AlertCircle, Edit2, Trash2, X, Users, UserPlus, Grid, List, Columns, LayoutGrid, Lightbulb, Wifi, WifiOff, Settings, ChevronDown, Menu } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from './components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card';
@@ -12,6 +12,7 @@ import { SmallCardsView, ListView, KanbanView, QuartersView } from './components
 import KPIManager from './components/KPIManager';
 import LaunchTimeline from './components/LaunchTimeline';
 import SimpleIdeasManager from './components/SimpleIdeasManager';
+import PublicationCalendar from './components/PublicationCalendar';
 import { taskNotificationManager } from './services/taskNotificationManager';
 import { realtimeSyncService } from './services/realtimeSync';
 import { participantsSyncService } from './services/participantsSync';
@@ -61,9 +62,35 @@ function App() {
   const [showLaunches, setShowLaunches] = useState(false);
   const [ideas, setIdeas] = useState([]);
   const [showIdeas, setShowIdeas] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [publications, setPublications] = useState([]);
+  const [showDropdownMenu, setShowDropdownMenu] = useState(false);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [isGoogleAuthenticated, setIsGoogleAuthenticated] = useState(false);
+
+  // Función para cambiar de vista
+  const switchToView = (view) => {
+    setShowLaunches(view === 'launches');
+    setShowCalendar(view === 'calendar');
+    setShowIdeas(view === 'ideas');
+    setShowKPIs(view === 'kpis');
+    setShowDropdownMenu(false);
+  };
+
+  // Cerrar menú desplegable al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDropdownMenu && !event.target.closest('.dropdown-menu')) {
+        setShowDropdownMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdownMenu]);
 
   // Iniciar sincronización en tiempo real
   useEffect(() => {
@@ -1074,110 +1101,186 @@ function App() {
               </div>
             </div>
             
-            {/* Chips minimalistas - Responsive */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <button
-                onClick={() => {
-                  setShowLaunches(!showLaunches);
-                  setShowKPIs(false);
-                  setShowIdeas(false);
-                }}
-                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
-                  showLaunches 
-                    ? 'bg-purple-500 text-white hover:bg-purple-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-              >
-                <Calendar className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span className="hidden md:inline">Lanzamientos</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
-                  {launches.length}
-                </span>
-              </button>
+            {/* Navegación simplificada */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Vista actual */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                <div className="flex items-center gap-2">
+                  {showLaunches ? <Calendar className="w-4 h-4 text-purple-600" /> :
+                   showCalendar ? <Calendar className="w-4 h-4 text-indigo-600" /> :
+                   showIdeas ? <Lightbulb className="w-4 h-4 text-yellow-600" /> :
+                   showKPIs ? <TrendingUp className="w-4 h-4 text-blue-600" /> :
+                   <Target className="w-4 h-4 text-gray-600" />}
+                  <span className="text-sm font-medium text-gray-700">
+                    {showLaunches ? 'Lanzamientos' :
+                     showCalendar ? 'Calendario' :
+                     showIdeas ? 'Ideas' :
+                     showKPIs ? 'KPIs' :
+                     'Dashboard'}
+                  </span>
+                </div>
+                {(showLaunches || showCalendar || showIdeas || showKPIs) && (
+                  <span className="text-xs text-gray-500">
+                    ({showLaunches ? launches.length :
+                      showCalendar ? publications?.length || 0 :
+                      showIdeas ? ideas.length :
+                      showKPIs ? kpis.length : 0})
+                  </span>
+                )}
+              </div>
 
-              <button
-                onClick={() => {
-                  setShowIdeas(!showIdeas);
-                  setShowKPIs(false);
-                  setShowLaunches(false);
-                }}
-                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
-                  showIdeas 
-                    ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-              >
-                <Lightbulb className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span className="hidden md:inline">Ideas</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
-                  {ideas.length}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  setShowKPIs(!showKPIs);
-                  setShowLaunches(false);
-                  setShowIdeas(false);
-                }}
-                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors ${
-                  showKPIs 
-                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                }`}
-              >
-                <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span className="hidden md:inline">KPIs</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
-                  {kpis.length}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => setShowPerspectivesManager(true)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-colors"
-              >
-                <Target className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span className="hidden md:inline">Perspectivas</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
-                  {getAllPerspectives().length}
-                </span>
-              </button>
-              
-              <button
-                onClick={() => setShowParticipantsManager(true)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-sm"
-              >
-                <Users className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span className="hidden md:inline">Participantes</span>
-                <span className="px-1 sm:px-1.5 py-0.5 bg-white rounded-full text-xs font-semibold text-gray-600">
-                  {globalParticipants.length}
-                </span>
-              </button>
-              
-              <button
-                onClick={exportToExcel}
-                className="hidden sm:flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-xs sm:text-sm font-medium transition-all duration-200 hover:shadow-md"
-              >
-                <Download className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span className="hidden lg:inline">Exportar</span>
-                <span className="lg:hidden">
-                  <Download className="w-3.5 h-3.5" />
-                </span>
-              </button>
+              {/* Menú desplegable */}
+              <div className="relative dropdown-menu">
+                <button
+                  onClick={() => setShowDropdownMenu(!showDropdownMenu)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Menu className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cambiar Vista</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {/* Dropdown menu */}
+                {showDropdownMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                    <div className="p-2">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">
+                        Vistas Principales
+                      </div>
+                      <button
+                        onClick={() => switchToView('dashboard')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                          !showLaunches && !showCalendar && !showIdeas && !showKPIs
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Target className="w-4 h-4" />
+                        <span>Dashboard Principal</span>
+                      </button>
+                      <button
+                        onClick={() => switchToView('launches')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                          showLaunches
+                            ? 'bg-purple-50 text-purple-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>Lanzamientos</span>
+                        <span className="ml-auto bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-xs">
+                          {launches.length}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => switchToView('calendar')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                          showCalendar
+                            ? 'bg-indigo-50 text-indigo-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>Calendario de Publicaciones</span>
+                        <span className="ml-auto bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full text-xs">
+                          {publications?.length || 0}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => switchToView('ideas')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                          showIdeas
+                            ? 'bg-yellow-50 text-yellow-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Lightbulb className="w-4 h-4" />
+                        <span>Ideas</span>
+                        <span className="ml-auto bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full text-xs">
+                          {ideas.length}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => switchToView('kpis')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                          showKPIs
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        <span>KPIs</span>
+                        <span className="ml-auto bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs">
+                          {kpis.length}
+                        </span>
+                      </button>
+
+                      <div className="border-t border-gray-100 mt-2 pt-2">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 py-2">
+                          Configuración
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowPerspectivesManager(true);
+                            setShowDropdownMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Target className="w-4 h-4" />
+                          <span>Perspectivas</span>
+                          <span className="ml-auto bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                            {getAllPerspectives().length}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowParticipantsManager(true);
+                            setShowDropdownMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>Participantes</span>
+                          <span className="ml-auto bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                            {globalParticipants.length}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            exportToExcel();
+                            setShowDropdownMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Exportar Datos</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        {/* Mostrar Lanzamientos, Ideas, KPIs o Dashboard normal */}
+        {/* Mostrar Lanzamientos, Ideas, KPIs, Calendario o Dashboard normal */}
         {showLaunches ? (
           <LaunchTimeline launches={launches} setLaunches={setLaunches} globalParticipants={globalParticipants} />
         ) : showIdeas ? (
           <SimpleIdeasManager ideas={ideas} setIdeas={setIdeas} />
         ) : showKPIs ? (
           <KPIManager kpis={kpis} setKpis={setKpis} tasks={tasks} />
+        ) : showCalendar ? (
+          <PublicationCalendar 
+            launches={launches} 
+            setLaunches={setLaunches} 
+            globalParticipants={globalParticipants}
+            publications={publications}
+            setPublications={setPublications}
+          />
         ) : (
           <>
         {/* Objetivo - Minimalista */}
