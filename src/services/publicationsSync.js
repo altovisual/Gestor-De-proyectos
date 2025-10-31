@@ -221,10 +221,9 @@ class PublicationsSyncService {
       secureLogger.debug('Verificando estado de la tabla publicaciones...');
       
       // Intentar hacer una consulta simple para verificar si la tabla existe
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from('publicaciones')
-        .select('count(*)')
-        .limit(1);
+        .select('*', { count: 'exact', head: true });
 
       if (error) {
         secureLogger.error('La tabla publicaciones no existe o hay un problema:', error);
@@ -238,7 +237,7 @@ class PublicationsSyncService {
       secureLogger.sync('Tabla publicaciones verificada correctamente');
       return {
         exists: true,
-        count: data?.[0]?.count || 0
+        count: count || 0
       };
     } catch (error) {
       secureLogger.error('Error verificando tabla publicaciones:', error);
